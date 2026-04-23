@@ -1,0 +1,142 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System users and employees",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "title": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "employee", "deleted"] },
+        "managerId": { "type": "string" },
+        "leaveBalance": { "type": "number" },
+        "startDate": { "type": "string", "format": "date" },
+        "birthDate": { "type": "string", "format": "date" },
+        "deviceId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "role"]
+    },
+    "LeaveRequest": {
+      "title": "Leave Request",
+      "description": "Employee leave requests",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "managerId": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "days": { "type": "number" },
+        "reason": { "type": "string" },
+        "type": { "type": "string", "enum": ["annual", "report", "excuse"] },
+        "attachmentUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "OvertimeRequest": {
+      "title": "Overtime Request",
+      "description": "Employee overtime requests",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "managerId": { "type": "string" },
+        "date": { "type": "string" },
+        "hours": { "type": "number" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Check-in and check-out logs",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["in", "out"] },
+        "status": { "type": "string", "enum": ["success", "warning", "error"] },
+        "errorMessage": { "type": "string" },
+        "ipAddress": { "type": "string" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" }
+          }
+        }
+      },
+      "required": ["userId", "timestamp", "type"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global system settings",
+      "type": "object",
+      "properties": {
+        "officeIp": { "type": "string" },
+        "qrSecret": { "type": "string" },
+        "companyName": { "type": "string" },
+        "workDaysPerWeek": { "type": "number" },
+        "roundingThresholdMinutes": { "type": "number" },
+        "shiftStart": { "type": "string" },
+        "shiftEnd": { "type": "string" },
+        "breakRules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "thresholdHours": { "type": "number" },
+              "deductionMinutes": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System notifications for users",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["info", "warning", "success", "error"] },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message", "type", "read", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/attendance/{logId}": {
+      "schema": "Attendance",
+      "description": "Attendance logs"
+    },
+    "/leaveRequests/{requestId}": {
+      "schema": "LeaveRequest",
+      "description": "Employee leave requests"
+    },
+    "/overtimeRequests/{requestId}": {
+      "schema": "OvertimeRequest",
+      "description": "Employee overtime requests"
+    },
+    "/settings/global": {
+      "schema": "Settings",
+      "description": "Global configuration"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "User notifications"
+    }
+  }
+}

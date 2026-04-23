@@ -1,0 +1,9 @@
+{
+  "name": "Remix: PDKS - Personel Devam Kontrol Sistemi",
+  "description": "Çalışanların giriş-çıkış takibi, izin yönetimi ve raporlama işlemlerini yapabileceği profesyonel bir PDKS uygulaması.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
