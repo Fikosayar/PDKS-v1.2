@@ -1,14 +1,52 @@
 <!doctype html>
-<html lang="en">
+<html lang="tr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>PDKS - Personel Devam Kontrol</title>
-    <meta name="description" content="PDKS Akıllı Devam Kontrol Sistemi" />
+    <title>PDKS - Personel Devam Kontrol Sistemi</title>
+    <meta name="description" content="PDKS Akıllı Personel Devam Kontrol Sistemi — QR kod ile giriş/çıkış, izin yönetimi, mesai takibi ve raporlama." />
+    <meta name="keywords" content="PDKS, personel devam kontrol, QR giriş çıkış, izin yönetimi, mesai takibi" />
+    <meta name="author" content="PDKS" />
+    <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#f97316" />
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="PDKS - Personel Devam Kontrol Sistemi" />
+    <meta property="og:description" content="Akıllı Personel Devam Kontrol Sistemi" />
+    <meta property="og:type" content="website" />
+    
+    <!-- Favicon & PWA -->
     <link rel="icon" type="image/png" href="/logo192.png" />
     <link rel="apple-touch-icon" href="/logo192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    
+    <style>
+      /* Loading spinner while JS loads */
+      #root:empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: #000;
+      }
+      #root:empty::after {
+        content: '';
+        width: 40px;
+        height: 40px;
+        border: 3px solid #27272a;
+        border-top-color: #f97316;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

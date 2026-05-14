@@ -141,6 +141,10 @@
 }
 
 body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-base);
   background-image:
     radial-gradient(at 0% 0%,   var(--gradient-accent1) 0px, transparent 50%),
@@ -278,3 +282,44 @@ body {
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ============================================================
+   SELECTION & FOCUS
+   ============================================================ */
+::selection {
+  background: rgba(249, 115, 22, 0.3);
+  color: var(--text-primary);
+}
+
+/* Keyboard focus ring */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ============================================================
+   TABULAR NUMBERS (saatler, rakamlar için düzgün hizalama)
+   ============================================================ */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   SMOOTH PAGE TRANSITIONS
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Number input ok tuşlarını gizle */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
