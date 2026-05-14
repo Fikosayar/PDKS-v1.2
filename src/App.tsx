@@ -22,7 +22,6 @@ import {
   onSnapshot,
   serverTimestamp,
   limit,
-  or,
   deleteDoc,
   updateDoc
 } from 'firebase/firestore';
@@ -733,14 +732,11 @@ export default function App() {
     if (profile.role === 'admin') {
       q = query(collection(db, 'leaveRequests'), orderBy('createdAt', 'desc'));
     } else {
-      // Show own requests OR requests assigned to me as manager
+      // Basit query: or() + orderBy() composite index gerektirir,
+      // index yoksa hata verir. Güvenli yol: index'siz query + client sıralama
       q = query(
         collection(db, 'leaveRequests'), 
-        or(
-          where('userId', '==', user.uid),
-          where('managerId', '==', user.uid)
-        ),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', user.uid)
       );
     }
 
@@ -751,16 +747,52 @@ export default function App() {
       })) as LeaveRequest[];
       
       const activeRequests = requests.filter(r => !(r as any).deleted);
-      if (profile.role === 'admin') {
-        setLeaveRequests(activeRequests);
-      } else {
-        setLeaveRequests(activeRequests.filter(r => r.userId === user.uid || r.managerId === user.uid));
-      }
+      activeRequests.sort((a: any, b: any) => {
+        const aT = a.createdAt?.toDate?.()?.getTime?.() ?? (typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : 0);
+        const bT = b.createdAt?.toDate?.()?.getTime?.() ?? (typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : 0);
+        return bT - aT;
+      });
+      setLeaveRequests(activeRequests);
+    }, (error) => {
+      console.error('Leave requests listener error:', error.message);
     });
-    return unsubscribe;
+
+    // Yöneticiyse: kendisine atanan talepleri de dinle
+    let unsubManager: (() => void) | undefined;
+    if (profile.role !== 'admin') {
+      const qManager = query(
+        collection(db, 'leaveRequests'),
+        where('managerId', '==', user.uid)
+      );
+      unsubManager = onSnapshot(qManager, (snapshot) => {
+        const managerRequests = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as LeaveRequest[];
+        const activeManagerReqs = managerRequests.filter(r => !(r as any).deleted);
+        
+        setLeaveRequests(prev => {
+          const ownReqs = prev.filter(r => r.userId === user.uid);
+          const merged = [...ownReqs, ...activeManagerReqs];
+          return merged.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i)
+            .sort((a: any, b: any) => {
+              const aT = a.createdAt?.toDate?.()?.getTime?.() ?? 0;
+              const bT = b.createdAt?.toDate?.()?.getTime?.() ?? 0;
+              return bT - aT;
+            });
+        });
+      }, (error) => {
+        console.warn('Manager leave requests listener error:', error.message);
+      });
+    }
+
+    return () => {
+      unsubscribe();
+      unsubManager?.();
+    };
   }, [user, profile]);
 
-  // Overtime Requests listener
+  // Overtime Requests listener — or() yerine ayrı query'ler (index gerektirmez)
   useEffect(() => {
     if (!user || !profile) return;
     
@@ -770,11 +802,7 @@ export default function App() {
     } else {
       q = query(
         collection(db, 'overtimeRequests'),
-        or(
-          where('userId', '==', user.uid),
-          where('managerId', '==', user.uid)
-        ),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', user.uid)
       );
     }
 
@@ -785,13 +813,49 @@ export default function App() {
       })) as OvertimeRequest[];
       
       const activeRequests = requests.filter(r => !(r as any).deleted);
-      if (profile.role === 'admin') {
-        setOvertimeRequests(activeRequests);
-      } else {
-        setOvertimeRequests(activeRequests.filter(r => r.userId === user.uid || r.managerId === user.uid));
-      }
+      activeRequests.sort((a: any, b: any) => {
+        const aT = a.createdAt?.toDate?.()?.getTime?.() ?? 0;
+        const bT = b.createdAt?.toDate?.()?.getTime?.() ?? 0;
+        return bT - aT;
+      });
+      setOvertimeRequests(activeRequests);
+    }, (error) => {
+      console.error('Overtime requests listener error:', error.message);
     });
-    return unsubscribe;
+
+    // Yöneticiyse: kendisine atanan mesai taleplerini de dinle
+    let unsubManager: (() => void) | undefined;
+    if (profile.role !== 'admin') {
+      const qManager = query(
+        collection(db, 'overtimeRequests'),
+        where('managerId', '==', user.uid)
+      );
+      unsubManager = onSnapshot(qManager, (snapshot) => {
+        const managerRequests = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as OvertimeRequest[];
+        const activeManagerReqs = managerRequests.filter(r => !(r as any).deleted);
+        
+        setOvertimeRequests(prev => {
+          const ownReqs = prev.filter(r => r.userId === user.uid);
+          const merged = [...ownReqs, ...activeManagerReqs];
+          return merged.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i)
+            .sort((a: any, b: any) => {
+              const aT = a.createdAt?.toDate?.()?.getTime?.() ?? 0;
+              const bT = b.createdAt?.toDate?.()?.getTime?.() ?? 0;
+              return bT - aT;
+            });
+        });
+      }, (error) => {
+        console.warn('Manager overtime requests listener error:', error.message);
+      });
+    }
+
+    return () => {
+      unsubscribe();
+      unsubManager?.();
+    };
   }, [user, profile]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -1431,7 +1495,8 @@ export default function App() {
       if (existing) return;
 
       const targetUser = allUsers.find(u => u.uid === userId);
-      if (!targetUser || !targetUser.managerId) return;
+      // managerId yoksa admin'e yönlendir (personele manager atanmamış olabilir)
+      const effectiveManagerId = targetUser?.managerId || 'admin_initial';
 
       // Calculate hours from standard shift end
       const exitTime = timestamp.getTime();
@@ -1443,7 +1508,7 @@ export default function App() {
         await addDoc(collection(db, 'overtimeRequests'), {
           userId,
           userName,
-          managerId: targetUser.managerId,
+          managerId: effectiveManagerId,
           date: dateStr,
           hours: overtimeHours,
           description: `Otomatik Sistem Kaydı (${format(timestamp, 'HH:mm')} çıkış)`,
@@ -2300,7 +2365,10 @@ export default function App() {
                     const holiday = getHoliday(dateStr);
                     const isHolidayDay = !!holiday;
                     const isPending = dayInLogs.some(l => l.status === 'pending' && !l.deleted);
-                    const hasSuccessLogs = dayInLogs.some(l => l.status !== 'error' && l.status !== 'pending' && !l.deleted);
+                    const successLogs = dayInLogs.filter(l => l.status !== 'error' && l.status !== 'pending' && !l.deleted);
+                    const hasSuccessLogs = successLogs.length > 0;
+                    const hasInLog = successLogs.some(l => l.type === 'in');
+                    const hasOutLog = successLogs.some(l => l.type === 'out');
                     const hasErrorLogs = dayInLogs.some(l => l.status === 'error' && !l.deleted);
 
                     results.push(
@@ -2311,7 +2379,8 @@ export default function App() {
                             "aspect-square rounded-xl border p-1 flex flex-col items-center justify-between transition-all hover:scale-[1.02] hover:shadow-xl relative overflow-hidden",
                             hasErrorLogs && !hasSuccessLogs && !isPending ? "border-red-500/30 bg-red-500/5" :
                             isPending ? "border-amber-500/30 bg-amber-500/5 shadow-[0_0_15px_rgba(245,158,11,0.05)]" :
-                            hasSuccessLogs ? "border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.05)]" : 
+                            hasInLog && hasOutLog ? "border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.05)]" :
+                            hasInLog && !hasOutLog ? "border-cyan-500/30 bg-cyan-500/5 shadow-[0_0_15px_rgba(6,182,212,0.05)]" : 
                             leave ? "border-orange-500/30 bg-orange-500/5 shadow-[0_0_10px_rgba(249,115,22,0.1)]" : 
                             isHolidayDay ? "border-red-500/30 bg-red-500/5 shadow-[0_0_10px_rgba(239,68,68,0.1)]" :
                             isSunday ? "border-zinc-900 bg-zinc-950/30" : 
