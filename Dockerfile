@@ -9,14 +9,17 @@ ENV NODE_ENV=development
 # Paket dosyalarını kopyala
 COPY package.json package-lock.json* ./
 
-# TÜM bağımlılıkları yükle (devDependencies dahil - vite, tailwind, vite-plugin-pwa vs.)
+# TÜM bağımlılıkları yükle (devDependencies dahil)
 RUN npm install --include=dev
 
 # Kaynak kodları kopyala
 COPY . .
 
-# Vite önyüzünü derle
+# 1. Vite önyüzünü derle
 RUN npm run build
+
+# 2. Server.ts'i JavaScript'e derle (tsx runtime derlemesi yerine)
+RUN npx esbuild server.ts --bundle --platform=node --format=cjs --outfile=dist/server.cjs --external:express --external:firebase --external:firebase-admin --external:bcryptjs --external:web-push --external:dotenv --external:vite
 
 # --- Prodüksiyon Aşaması ---
 FROM node:20-alpine
@@ -30,26 +33,17 @@ COPY package.json package-lock.json* ./
 ENV NODE_ENV=production
 RUN npm install --omit=dev
 
-# tsx gerekli (server.ts çalıştırmak için)
-RUN npm install -g tsx
-
-# Derlenmiş önyüzü kopyala
+# Derlenmiş önyüzü ve sunucuyu kopyala
 COPY --from=builder /app/dist ./dist
-
-# Arkayüz dosyalarını kopyala
-COPY --from=builder /app/server.ts ./
 
 # Public dosyaları kopyala (PWA service worker, logolar vb.)
 COPY --from=builder /app/public ./public
 
-# Firestore kurallarını kopyala (referans için)
-COPY --from=builder /app/firestore.rules ./
-
 EXPOSE 8104
 
-# Health check (daha toleranslı — sunucu başlangıcı için yeterli süre)
-HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=5 \
+# Health check (node ile başlangıç çok daha hızlı)
+HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=5 \
   CMD wget -qO- http://localhost:8104/api/health || exit 1
 
-# Sunucuyu başlat
-CMD ["tsx", "server.ts"]
+# Sunucuyu node ile başlat (tsx yok, derleme yok, anında çalışır)
+CMD ["node", "dist/server.cjs"]

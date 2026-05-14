@@ -2,7 +2,6 @@ import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { initializeApp as initializeAdminApp } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
@@ -12,8 +11,8 @@ import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import webpush from 'web-push';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// __dirname: process.cwd() hem ESM hem CJS'de çalışır
+const __dirname = process.cwd();
 // Define the secret system key via Environment Variables for maximum security
 const SYSTEM_KEY = process.env.PDKS_SYSTEM_KEY;
 if (!SYSTEM_KEY) {
