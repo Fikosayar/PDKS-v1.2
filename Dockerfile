@@ -18,8 +18,10 @@ COPY . .
 # 1. Vite önyüzünü derle
 RUN npm run build
 
-# 2. Server.ts'i JavaScript'e derle (tsx runtime derlemesi yerine)
-RUN npx esbuild server.ts --bundle --platform=node --format=cjs --outfile=dist/server.cjs --external:express --external:firebase --external:firebase-admin --external:bcryptjs --external:web-push --external:dotenv --external:vite
+# 2. Server.ts'i JavaScript'e derle
+RUN npx esbuild server.ts --bundle --platform=node --format=cjs --outfile=dist/server.cjs \
+  --external:express --external:firebase --external:firebase-admin \
+  --external:bcryptjs --external:web-push --external:dotenv
 
 # --- Prodüksiyon Aşaması ---
 FROM node:20-alpine
@@ -41,9 +43,5 @@ COPY --from=builder /app/public ./public
 
 EXPOSE 8104
 
-# Health check (node ile başlangıç çok daha hızlı)
-HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=5 \
-  CMD wget -qO- http://localhost:8104/api/health || exit 1
-
-# Sunucuyu node ile başlat (tsx yok, derleme yok, anında çalışır)
+# Sunucuyu başlat
 CMD ["node", "dist/server.cjs"]
