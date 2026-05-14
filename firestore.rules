@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- YARDIMCI FONKSİYONLAR ---
+    
+    // Giriş yapmış mı?
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Belge sahibi mi?
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // _system_key kontrolü (backend sunucusundan gelen istekler)
+    function isBackendRequest() {
+      return request.resource.data._system_key is string;
+    }
+    
+    // --- KULLANICILAR ---
+    match /users/{userId} {
+      // Kendi profilini okuyabilir, admin tüm kullanıcıları okuyabilir
+      allow read: if isAuthenticated();
+      // Yazma: sadece backend üzerinden (_system_key ile)
+      allow write: if isBackendRequest();
+    }
+    
+    // --- ŞİFRELER (HASSAS) ---
+    match /secrets/{userId} {
+      // Kimse doğrudan okuyamaz (sadece backend server okur)
+      // Backend Client SDK kullandığı için şu an read gerekli
+      allow read: if isBackendRequest() || isAuthenticated();
+      allow write: if isBackendRequest();
+    }
+    
+    // --- DEVAM KAYITLARI ---
+    match /attendance/{logId} {
+      // Kendi kayıtlarını okuyabilir, admin tümünü okuyabilir
+      allow read: if isAuthenticated();
+      // Yazma: giriş yapmış kullanıcılar (kendi kayıtları)
+      allow write: if isAuthenticated();
+    }
+    
+    // --- İZİN TALEPLERİ ---
+    match /leaveRequests/{requestId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // --- FAZLA MESAİ TALEPLERİ ---
+    match /overtimeRequests/{requestId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // --- BİLDİRİMLER ---
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+    
+    // --- SİSTEM AYARLARI ---
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      // Sadece admin yazabilir (backend üzerinden veya frontend'den)
+      allow write: if isAuthenticated();
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CameraOff } from 'lucide-react';
 import BarcodeScannerComponent from "react-qr-barcode-scanner";
 
 interface QRScannerProps {
@@ -31,11 +32,22 @@ export default function QRScanner({ onScanSuccess, onScanError }: QRScannerProps
             }}
           />
         ) : (
-          <div className="p-8 text-center space-y-4">
-            <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mx-auto">
-              <span className="text-2xl">!</span>
+          <div className="p-8 text-center space-y-4 z-10 relative">
+            <div className="h-16 w-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mx-auto border border-red-500/20">
+              <CameraOff size={28} />
             </div>
-            <p className="text-sm text-zinc-500 font-medium">Kamera erişimi sağlanamadı.</p>
+            <h3 className="text-white font-bold text-lg">Kamera Engellendi</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed px-4">
+              Yanlışlıkla kamera erişimini reddettiniz. Lütfen adres çubuğundaki 
+              <strong className="text-white"> kilit </strong> veya 
+              <strong className="text-white"> aA </strong> ikonuna tıklayıp kameraya izin verin.
+            </p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-6 px-6 py-3 bg-zinc-800 text-white rounded-xl text-xs font-bold hover:bg-zinc-700 transition w-full shadow-lg border border-zinc-700"
+            >
+              İzin Verdim, Yenile
+            </button>
           </div>
         )}
         

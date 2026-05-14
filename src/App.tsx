@@ -3,10 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  GoogleAuthProvider, 
-  signInWithPopup, 
   onAuthStateChanged, 
   signOut,
   signInWithCustomToken,
@@ -28,11 +26,11 @@ import {
   deleteDoc,
   updateDoc
 } from 'firebase/firestore';
-import { auth, db, storage } from './lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { UserProfile, AttendanceLog, GlobalSettings, LeaveRequest, OvertimeRequest, SystemNotification } from './types';
+import { auth, db } from './lib/firebase';
+import { UserProfile, AttendanceLog, GlobalSettings, LeaveRequest, OvertimeRequest, SystemNotification, OfflineQueueItem } from './types';
+import { subscribeToPush, requestNotificationPermission, showLocalNotification, VAPID_PUBLIC_KEY } from './lib/pushNotifications';
+import { addToOfflineQueue, getOfflineQueue, removeFromOfflineQueue } from './lib/offlineQueue';
 import { cn } from './lib/utils';
-import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import { 
   LogOut, 
   LogIn, 
@@ -46,6 +44,7 @@ import {
   Clock,
   QrCode,
   Wifi,
+  WifiOff,
   Users,
   Trash2,
   Plus,
@@ -59,21 +58,44 @@ import {
   Key,
   ArrowLeft,
   ChevronRight,
+  ChevronLeft,
   Download,
-  Save,
   Clock4,
   ShieldAlert,
   AlertCircle,
   Bell,
-  Info
+  Info,
+  Truck,
+  CheckCircle,
+  Sun,
+  Moon,
+  Monitor,
+  AlertTriangle,
+  UserX,
+  Camera
 } from 'lucide-react';
+
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'motion/react';
 import QRScanner from './components/QRScanner';
+import BottomNav from './components/BottomNav';
 import { QRCodeSVG } from 'qrcode.react';
 import * as XLSX from 'xlsx';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { getStoredTheme, setStoredTheme, applyTheme, listenSystemTheme, getEffectiveTheme, type Theme } from './lib/theme';
+import { getHoliday } from './lib/holidays';
 
+function dataURItoBlob(dataURI: string) {
+  const byteString = atob(dataURI.split(',')[1]);
+  const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([ab], { type: mimeString });
+}
 export default function App() {
   const [user, setUser] = useState<{ uid: string } | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -84,7 +106,12 @@ export default function App() {
   const [overtimeRequests, setOvertimeRequests] = useState<OvertimeRequest[]>([]);
   const [settings, setSettings] = useState<GlobalSettings | null>(null);
   const [showScanner, setShowScanner] = useState(false);
-  const [activeTab, setActiveTab] = useState<'home' | 'users' | 'qr' | 'profile' | 'leaves' | 'approvals' | 'movements'>('home');
+  
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activeTab = location.pathname === '/' || location.pathname === '' ? 'home' : location.pathname.substring(1);
+  const setActiveTab = (tab: string) => navigate(`/${tab}`);
+  
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const [selectedPersonnelId, setSelectedPersonnelId] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>(format(new Date(), 'yyyy-MM'));
@@ -96,6 +123,15 @@ export default function App() {
   const [manualLogType, setManualLogType] = useState<'in' | 'out'>('in');
   const [scanType, setScanType] = useState<'in' | 'out' | null>(null);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  
+  // Status mesajları otomatik kaybolsun
+  useEffect(() => {
+    if (!status) return;
+    const timeout = status.type === 'success' ? 4000 : 6000;
+    const timer = setTimeout(() => setStatus(null), timeout);
+    return () => clearTimeout(timer);
+  }, [status]);
+
   const [currentIp, setCurrentIp] = useState<string>('');
   const [loginError, setLoginError] = useState<React.ReactNode | null>(null);
   const [calcLeaveDays, setCalcLeaveDays] = useState<number>(0);
@@ -105,25 +141,50 @@ export default function App() {
   const [leaveType, setLeaveType] = useState<'annual' | 'report' | 'excuse'>('annual');
   const [reportFile, setReportFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [viewingAttachment, setViewingAttachment] = useState<string | null>(null);
 
   const [notifications, setNotifications] = useState<SystemNotification[]>([]);
   const [deletionReason, setDeletionReason] = useState<string>('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
+  const [dashboardStatModal, setDashboardStatModal] = useState<null | { title: string; color: string; icon: React.ReactNode; people: { name: string; detail: string; uid: string }[] }>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = React.useRef<HTMLInputElement>(null);
 
-  const [fingerprint, setFingerprint] = useState<string | null>(null);
+  // Tema sistemi
+  const [theme, setTheme] = useState<Theme>(() => getStoredTheme());
+  const effectiveTheme = getEffectiveTheme(theme);
 
-  // Initialize FingerprintJS
   useEffect(() => {
-    const setFp = async () => {
-      const fpPromise = FingerprintJS.load();
-      const fp = await fpPromise;
-      const result = await fp.get();
-      setFingerprint(result.visitorId);
-    };
-    setFp();
-  }, []);
+    applyTheme(theme);
+    setStoredTheme(theme);
+    // Sistem teması değişince güncelle
+    if (theme === 'system') {
+      return listenSystemTheme(() => applyTheme('system'));
+    }
+  }, [theme]);
+
+  const cycleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : prev === 'light' ? 'system' : 'dark');
+  };
+
+  // Çevrimdışı mod
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [offlineQueueCount, setOfflineQueueCount] = useState(0);
+
+  // Nakliye (uzaktan giriş) modu
+  const [showRemoteModal, setShowRemoteModal] = useState(false);
+  const [remoteNote, setRemoteNote] = useState('');
+  const [pendingScanType, setPendingScanType] = useState<'in' | 'out' | null>(null);
+  const [remoteManualMode, setRemoteManualMode] = useState(false); // true = manuel, false = QR
+  const [remoteManualTime, setRemoteManualTime] = useState('');
+  const [remoteSubmitting, setRemoteSubmitting] = useState(false);
+
+  // Push bildirim durumu
+  const [pushEnabled, setPushEnabled] = useState(false);
+
+
 
   const getEffectiveLeaveBalance = (u: UserProfile | null) => {
     if (!u) return 0;
@@ -156,11 +217,29 @@ export default function App() {
   };
 
   const getOrCreateDeviceId = () => {
+    // 1. Önce LocalStorage'a bak
     let devId = localStorage.getItem('pdks_device_id');
+    
+    // 2. Yoksa çerezlere (Cookie) bak (Safari bazen localStorage siler ama çerezi tutar)
+    if (!devId) {
+      const match = document.cookie.match(new RegExp('(^| )pdks_device_id=([^;]+)'));
+      if (match) devId = match[2];
+    }
+    
+    // 3. İkisinde de yoksa sıfırdan oluştur
     if (!devId) {
       devId = 'dev-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      localStorage.setItem('pdks_device_id', devId);
     }
+    
+    // Her ihtimale karşı ikisine birden tekrar güçlüce kaydet
+    try {
+      localStorage.setItem('pdks_device_id', devId);
+      // Çerezi 10 yıl geçerli olacak şekilde ayarla
+      document.cookie = `pdks_device_id=${devId}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/`;
+    } catch (e) {
+      console.warn("Tarayıcı veri kaydetmeyi engelliyor.");
+    }
+    
     return devId;
   };
 
@@ -187,8 +266,8 @@ export default function App() {
       if (birthDateStr) {
         const birth = new Date(birthDateStr);
         age = today.getFullYear() - birth.getFullYear();
-        const am = today.getMonth() - birth.getMonth();
-        if (am < 0 || (am === 0 && today.getDate() < birth.getDate())) {
+        const mAge = today.getMonth() - birth.getMonth();
+        if (mAge < 0 || (mAge === 0 && today.getDate() < birth.getDate())) {
           age--;
         }
       }
@@ -206,6 +285,123 @@ export default function App() {
       return 0;
     }
   };
+
+  const dashboardStats = React.useMemo(() => {
+    if (!profile || profile.role !== 'admin') return null;
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const shiftStart = settings?.shiftStart || '08:00';
+
+    // Sadece aktif personel (silinmemiş)
+    const activeUsers = allUsers.filter(u => u.role !== 'deleted');
+
+    // Bugünün onaylı logları (pending dahil değil)
+    const todayLogs = logs.filter(l =>
+      !l.deleted &&
+      l.status !== 'pending' &&
+      l.status !== 'error' &&
+      l.timestamp?.toDate &&
+      format(l.timestamp.toDate(), 'yyyy-MM-dd') === todayStr
+    );
+
+    // Her personel için bugünkü en son durumu belirle (son log out mu in mi?)
+    const userLastAction = new Map<string, string>(); // userId -> 'in' | 'out'
+    const userFirstIn = new Map<string, string>();     // userId -> 'HH:mm' (ilk giriş saati)
+
+    todayLogs
+      .sort((a, b) => (a.timestamp.toDate().getTime()) - (b.timestamp.toDate().getTime()))
+      .forEach(l => {
+        userLastAction.set(l.userId, l.type);
+        if (l.type === 'in' && !userFirstIn.has(l.userId)) {
+          userFirstIn.set(l.userId, format(l.timestamp.toDate(), 'HH:mm'));
+        }
+      });
+
+    // Şu an ofiste: son hareketi 'in' olanlar
+    const presentIds = new Set<string>();
+    userLastAction.forEach((type, uid) => {
+      if (type === 'in') presentIds.add(uid);
+    });
+
+    // İzinli bugün
+    const onLeaveIds = new Set<string>(
+      leaveRequests.filter(r =>
+        r.status === 'approved' && !r.deleted &&
+        r.startDate <= todayStr && r.endDate >= todayStr
+      ).map(r => r.userId)
+    );
+
+    // Geç kalanlar: ilk giriş saati mesai başından sonra olan kişiler (kişi başı 1 kez)
+    let lateCount = 0;
+    userFirstIn.forEach((time) => {
+      if (time > shiftStart) lateCount++;
+    });
+
+    // Gelmeyen listesi: aktif, izinli değil, bugün hiç giriş yapmamış
+    const lateIds = new Set<string>();
+    userFirstIn.forEach((time, uid) => { if (time > shiftStart) lateIds.add(uid); });
+    const absentUserIds = new Set<string>();
+    activeUsers.forEach(u => {
+      if (!presentIds.has(u.uid) && !onLeaveIds.has(u.uid)) absentUserIds.add(u.uid);
+    });
+
+    // Kişi listelerini de döndür
+    const userMap = new Map<string, UserProfile>(activeUsers.map(u => [u.uid, u]));
+    const presentList = [...presentIds].map(uid => {
+      const u = userMap.get(uid);
+      return { uid, name: u?.name || uid, detail: `Giriş: ${userFirstIn.get(uid) || '-'}` };
+    });
+    const onLeaveList = [...onLeaveIds].map(uid => {
+      const u = userMap.get(uid);
+      return { uid, name: u?.name || uid, detail: u?.title || 'İzinli' };
+    });
+    const lateList = [...lateIds].map(uid => {
+      const u = userMap.get(uid);
+      return { uid, name: u?.name || uid, detail: `Giriş: ${userFirstIn.get(uid) || '-'}` };
+    });
+    const absentList = [...absentUserIds].map(uid => {
+      const u = userMap.get(uid);
+      return { uid, name: u?.name || uid, detail: u?.title || 'Personel' };
+    });
+
+    const absentCount = Math.max(0, activeUsers.length - presentIds.size - onLeaveIds.size);
+
+    return {
+      totalStaff: activeUsers.length,
+      present: presentIds.size, presentList,
+      onLeave: onLeaveIds.size, onLeaveList,
+      late: lateIds.size, lateList,
+      absent: absentCount, absentList,
+    };
+  }, [logs, allUsers, leaveRequests, settings, profile]);
+
+
+  const userLateCountThisMonth = React.useMemo(() => {
+    if (!user || profile?.role === 'admin') return 0;
+    const shiftStart = settings?.shiftStart || '08:00';
+    const [year, month] = selectedMonth.split('-');
+    let lateCount = 0;
+    
+    const userLogs = logs.filter(l => l.userId === user.uid && !l.deleted && l.type === 'in');
+    
+    // Her günün sadece ilk girişini kontrol et
+    const firstInsPerDay = new Map<string, string>(); // date -> time
+    userLogs.forEach(l => {
+      const dateStr = format(l.timestamp?.toDate() || new Date(), 'yyyy-MM-dd');
+      if (!dateStr.startsWith(selectedMonth)) return;
+      const timeStr = format(l.timestamp?.toDate() || new Date(), 'HH:mm');
+      if (!firstInsPerDay.has(dateStr) || timeStr < firstInsPerDay.get(dateStr)!) {
+        firstInsPerDay.set(dateStr, timeStr);
+      }
+    });
+
+    firstInsPerDay.forEach((time) => {
+      if (time > shiftStart) lateCount++;
+    });
+
+    return lateCount;
+  }, [logs, selectedMonth, user, profile, settings]);
+
+  // (Silinen duplicate blok)
   const [editingOvertime, setEditingOvertime] = useState<OvertimeRequest | null>(null);
   const [deletingOvertime, setDeletingOvertime] = useState<OvertimeRequest | null>(null);
   const [selectedDayDetails, setSelectedDayDetails] = useState<{ date: string, userId: string } | null>(null);
@@ -229,9 +425,18 @@ export default function App() {
       if (end >= start) {
         let count = 0;
         const current = new Date(start);
+        const workDays = settings?.workDaysPerWeek || 6;
         while (current <= end) {
-          // Sunday is 0 in JavaScript Date
-          if (current.getDay() !== 0) {
+          const dayOfWeek = current.getDay();
+          const dateStr = current.toISOString().slice(0, 10);
+          // Pazar her zaman tatil
+          const isSunday = dayOfWeek === 0;
+          // 5 günlük çalışma düzeninde Cumartesi de tatil
+          const isSaturday = dayOfWeek === 6 && workDays === 5;
+          // Resmi tatil kontrolü
+          const isPublicHoliday = !!getHoliday(dateStr);
+          
+          if (!isSunday && !isSaturday && !isPublicHoliday) {
             count++;
           }
           current.setDate(current.getDate() + 1);
@@ -241,7 +446,7 @@ export default function App() {
         setCalcLeaveDays(0);
       }
     }
-  }, [leaveStartDate, leaveEndDate]);
+  }, [leaveStartDate, leaveEndDate, settings?.workDaysPerWeek]);
 
   useEffect(() => {
     if (overtimeStartTime && overtimeEndTime) {
@@ -307,31 +512,78 @@ export default function App() {
     });
     return unsubscribe;
   }, [user]);
-
-  // Logs listener
+   // Logs listener — Admin: tüm veriler | Personel/Manager: kendi verisi
   useEffect(() => {
     if (!user || !profile) return;
     
-    let q;
+    let q: ReturnType<typeof query>;
     if (profile.role === 'admin') {
       q = query(collection(db, 'attendance'), orderBy('timestamp', 'desc'), limit(1000));
     } else {
-      q = query(collection(db, 'attendance'), where('userId', '==', user.uid), orderBy('timestamp', 'desc'), limit(200));
+      q = query(collection(db, 'attendance'), where('userId', '==', user.uid));
     }
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, { includeMetadataChanges: false }, (snapshot) => {
       const newLogs = snapshot.docs
+        .map(d => ({
+          id: d.id,
+          ...(d.data() as Record<string, any>)
+        }))
+        .filter((l: any) => !l.deleted) as AttendanceLog[];
+      
+      // Admin ise zaten server'da sıralı, değilse client'ta sırala (Index hatasını önlemek için)
+      if (profile.role !== 'admin') {
+        newLogs.sort((a,b) => {
+          const aT = a.timestamp?.toDate?.()?.getTime?.() || 0;
+          const bT = b.timestamp?.toDate?.()?.getTime?.() || 0;
+          return bT - aT;
+        });
+      }
+      
+      setLogs(newLogs);
+    }, (error) => {
+      console.error("Logs listener error:", error);
+    });
+    return unsubscribe;
+  }, [user, profile]);
+
+  // Ekip logs listener — Sadece yöneticiler için (altındaki personelin hareketleri)
+  useEffect(() => {
+    if (!user || !profile || profile.role === 'admin') return;
+    
+    const teamUids = allUsers.filter(u => u.managerId === user.uid).map(u => u.uid);
+    if (teamUids.length === 0) return;
+    
+    const safeUids = teamUids.slice(0, 10);
+    const q = query(
+      collection(db, 'attendance'),
+      where('userId', 'in', safeUids)
+    );
+
+    const unsubscribe = onSnapshot(q, { includeMetadataChanges: false }, (snapshot) => {
+      const teamLogs = snapshot.docs
         .map(doc => ({
           id: doc.id,
           ...doc.data()
         }))
         .filter((l: any) => !l.deleted) as AttendanceLog[];
-      setLogs(newLogs);
+
+      setLogs(prev => {
+        const ownLogs = prev.filter(l => l.userId === user.uid);
+        const merged = [...ownLogs, ...teamLogs];
+        const unique = merged.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+        return unique.sort((a: any, b: any) => {
+          const aT = a.timestamp?.toDate?.()?.getTime?.() ?? 0;
+          const bT = b.timestamp?.toDate?.()?.getTime?.() ?? 0;
+          return bT - aT;
+        });
+      });
     });
     return unsubscribe;
-  }, [user, profile]);
+  }, [user, profile, allUsers]);
 
   // Users listener (Admin and Managers)
+
   useEffect(() => {
     if (!user || !profile) return;
     
@@ -353,21 +605,89 @@ export default function App() {
   // Notifications listener
   useEffect(() => {
     if (!user) return;
+    // createdAt karışık formatlarda (string ve Timestamp) gelebilir;
+    // Firestore index gerektirmeyen basit query kullan, sıralamayı client'ta yap
     const q = query(
       collection(db, 'notifications'), 
-      where('userId', '==', user.uid), 
-      orderBy('createdAt', 'desc'), 
-      limit(50)
+      where('userId', '==', user.uid),
+      limit(100)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const newNotifs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as SystemNotification[];
-      setNotifications(newNotifs);
+      // Client-side sıralama: en yeni önce
+      newNotifs.sort((a: any, b: any) => {
+        const aTime = a.createdAt?.toDate?.()?.getTime?.() ?? (typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : 0);
+        const bTime = b.createdAt?.toDate?.()?.getTime?.() ?? (typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : 0);
+        return bTime - aTime;
+      });
+      setNotifications(newNotifs.slice(0, 50));
+    }, (error) => {
+      console.warn('Notifications listener error:', error.message);
     });
     return unsubscribe;
   }, [user]);
+
+  // İnternet bağlantı takibi
+  useEffect(() => {
+    const handleOnline = async () => {
+      setIsOnline(true);
+      // İnternet gelince çevrimdışı kuyruğu senkronize et
+      await syncOfflineQueueToFirebase();
+    };
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [user, profile]);
+
+  // SW mesajlarını dinle (bildirim tıklaması yönlendirmesi)
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'NAVIGATE' && event.data.link) {
+        navigate(event.data.link);
+      }
+      if (event.data?.type === 'SYNC_OFFLINE_QUEUE') {
+        syncOfflineQueueToFirebase();
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', handler);
+    return () => navigator.serviceWorker.removeEventListener('message', handler);
+  }, [user, profile]);
+
+  // Kullanıcı giriş yaptıktan sonra push aboneliği kur
+  useEffect(() => {
+    if (!user) return;
+    const setupPush = async () => {
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        const sub = await subscribeToPush();
+        if (sub) {
+          setPushEnabled(true);
+          // Aboneliği sunucuya kaydet
+          await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uid: user.uid, subscription: sub })
+          });
+        }
+      }
+    };
+    setupPush();
+  }, [user]);
+
+  // Çevrimdışı kuyruk sayısını güncelle
+  useEffect(() => {
+    getOfflineQueue().then(q => setOfflineQueueCount(q.length));
+  }, [user]);
+
+
 
   const markNotificationRead = async (id: string) => {
     try {
@@ -376,8 +696,36 @@ export default function App() {
       console.error("Mark read error:", e);
     }
   };
+  // Çevrimdışı kuyruğu Firebase'e senkronize et
+  const syncOfflineQueueToFirebase = useCallback(async () => {
+    if (!user || !profile) return;
+    const queue = await getOfflineQueue();
+    if (queue.length === 0) return;
+    
+    let syncedCount = 0;
+    for (const item of queue) {
+      try {
+        const { clientTimestamp, ...payload } = item.payload;
+        await addDoc(collection(db, 'attendance'), {
+          ...payload,
+          timestamp: serverTimestamp(),
+          offlineQueued: true,
+          clientTimestamp
+        });
+        await removeFromOfflineQueue(item.id);
+        syncedCount++;
+      } catch (err) {
+        console.error('Çevrimdışı kayıt senkronize edilemedi:', err);
+      }
+    }
+    if (syncedCount > 0) {
+      setOfflineQueueCount(0);
+      setStatus({ type: 'success', message: `${syncedCount} çevrimdışı hareket başarıyla senkronize edildi!` });
+    }
+  }, [user, profile]);
 
   // Leave Requests listener
+
   useEffect(() => {
     if (!user || !profile) return;
     
@@ -461,7 +809,7 @@ export default function App() {
           personnelId, 
           password,
           deviceInfo: navigator.userAgent,
-          permanentDeviceId: fingerprint || getOrCreateDeviceId()
+          permanentDeviceId: getOrCreateDeviceId()
         })
       });
 
@@ -510,7 +858,7 @@ export default function App() {
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
                     title="Kopyala"
                   >
-                    <Save size={14} />
+                    <Download size={14} />
                   </button>
                 </div>
               </div>
@@ -565,6 +913,7 @@ export default function App() {
     const birthDate = formData.get('birthDate') as string;
     const allowedDevice = formData.get('allowedDevice') as string;
     const deviceId = formData.get('deviceId') as string;
+    const canRemoteCheckIn = formData.get('canRemoteCheckIn') === 'true';
 
     try {
       const response = await fetch('/api/users', {
@@ -572,7 +921,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           adminUid: profile.uid,
-          newUser: { name, title, personnelId, password, role, managerId, leaveBalance, startDate, birthDate, allowedDevice, deviceId }
+          newUser: { name, title, personnelId, password, role, managerId, leaveBalance, startDate, birthDate, allowedDevice, deviceId, canRemoteCheckIn }
         })
       });
 
@@ -639,7 +988,6 @@ export default function App() {
       await setDoc(doc(db, 'settings', 'global'), { 
         ...settings, 
         qrSecret: newSecret,
-        _system_key: 'pdk_system_secret_2026'
       });
       setStatus({ type: 'success', message: 'QR kod başarıyla güncellendi.' });
     } catch (error) {
@@ -648,11 +996,25 @@ export default function App() {
   };
 
   const isProcessingScan = React.useRef(false);
+  const lastScanTimestamp = React.useRef<number>(0);
+  const SCAN_COOLDOWN_MS = 60000; // 1 dakika mükerrer koruma
 
   const handleScanSuccess = async (decodedText: string) => {
     if (!settings || !user || !profile || !scanType || isProcessingScan.current) return;
     
+    // Mükerrer okutma koruması: Son 1 dakika içinde aynı işlem yapıldıysa engelle
+    const now = Date.now();
+    if (now - lastScanTimestamp.current < SCAN_COOLDOWN_MS) {
+      const kalanSaniye = Math.ceil((SCAN_COOLDOWN_MS - (now - lastScanTimestamp.current)) / 1000);
+      setStatus({ type: 'error', message: `Çok hızlı okutma! Lütfen ${kalanSaniye} saniye bekleyin.` });
+      setShowScanner(false);
+      return;
+    }
+    
     isProcessingScan.current = true;
+    // Scanner'ı hemen kapat ki çift okutma olmasın
+    setShowScanner(false);
+    
     try {
       // 1. QR Secret Check
       if (decodedText !== settings.qrSecret) {
@@ -663,17 +1025,16 @@ export default function App() {
           type: scanType,
           ipAddress: currentIp,
           status: 'error',
-          errorMessage: 'Geçersiz QR Kod Okutuldu',
-          _system_key: 'pdk_system_secret_2026'
+          errorMessage: 'Geçersiz QR Kod Okutuldu'
         });
         setStatus({ type: 'error', message: 'Geçersiz QR kod. Lütfen iş yerindeki güncel kodu okutun.' });
-        setShowScanner(false);
         isProcessingScan.current = false;
         return;
       }
 
-      // 2. IP Check
-      if (settings.officeIp && currentIp !== settings.officeIp) {
+      // 2. IP Check (Nakliye yetkisi olan personel için IP kontrolü atla)
+      const hasRemotePermission = profile.canRemoteCheckIn === true;
+      if (settings.officeIp && currentIp !== settings.officeIp && !hasRemotePermission) {
         await addDoc(collection(db, 'attendance'), {
           userId: user.uid,
           userName: profile.name,
@@ -681,16 +1042,17 @@ export default function App() {
           type: scanType,
           ipAddress: currentIp,
           status: 'error',
-          errorMessage: 'Hatalı IP / Ağ Erişimi Denemesi',
-          _system_key: 'pdk_system_secret_2026'
+          errorMessage: 'Hatalı IP / Ağ Erişimi Denemesi'
         });
         setStatus({ type: 'error', message: `Hatalı ağ. Sadece iş yeri Wi-Fi ağına bağlıyken işlem yapabilirsiniz. (Mevcut IP: ${currentIp})` });
-        setShowScanner(false);
         isProcessingScan.current = false;
         return;
       }
 
-      // 3. Location (Optional but good)
+      // 3. Nakliye modunda mısın?
+      const isRemote = hasRemotePermission && settings.officeIp && currentIp !== settings.officeIp;
+
+      // 4. Konum al
       let location = undefined;
       try {
         const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -704,26 +1066,70 @@ export default function App() {
         console.warn("Geolocation denied or failed");
       }
 
-      // 4. Save Log (Success)
-      const timestamp = new Date();
-      await addDoc(collection(db, 'attendance'), {
+      const logPayload: any = {
         userId: user.uid,
         userName: profile.name,
-        timestamp: serverTimestamp(),
         type: scanType,
         ipAddress: currentIp,
         location: location || null,
         status: 'success',
-        _system_key: 'pdk_system_secret_2026'
-      });
-      
-      // Check for auto-overtime
-      if (scanType === 'out') {
-        await checkAndCreateAutoOvertime(user.uid, profile.name, timestamp, 'out');
+        isRemote: !!isRemote,
+        remoteNote: isRemote ? (remoteNote || '') : null,
+      };
+
+      // 5. Çevrimdışı ise kuyruğa al, online ise direkt yaz
+      if (!isOnline) {
+        const queueItem: OfflineQueueItem = {
+          id: `offline-${Date.now()}-${Math.random().toString(36).substring(2)}`,
+          type: 'attendance',
+          payload: { ...logPayload, clientTimestamp: new Date().toISOString() },
+          createdAt: new Date().toISOString()
+        };
+        await addToOfflineQueue(queueItem);
+        const newCount = (await getOfflineQueue()).length;
+        setOfflineQueueCount(newCount);
+        setStatus({ type: 'success', message: `📵 İnternetsiz mod: ${scanType === 'in' ? 'Giriş' : 'Çıkış'} kaydedildi, internet gelince senkronize edilecek.` });
+      } else {
+        const clientNow = new Date();
+        // Firestore'a yaz
+        const newDocRef = await addDoc(collection(db, 'attendance'), {
+          ...logPayload,
+          timestamp: serverTimestamp(),
+        });
+
+        // OPTİMİSTİK UI: Snapshot beklemeden anında state'e ekle
+        const optimisticLog: AttendanceLog = {
+          id: newDocRef.id,
+          ...logPayload,
+          timestamp: { toDate: () => clientNow } as any,
+        };
+        setLogs(prev => [optimisticLog, ...prev.filter(l => l.id !== newDocRef.id)]);
+
+        // Check for auto-overtime
+        if (scanType === 'out') {
+          await checkAndCreateAutoOvertime(user.uid, profile.name, clientNow, 'out');
+        }
+
+        // Yöneticiye giriş bildirimi gönder
+        fetch('/api/notify/checkin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.uid,
+            userName: profile.name,
+            type: scanType,
+            isRemote: !!isRemote,
+            remoteNote: remoteNote || ''
+          })
+        }).catch(() => {});
+
+        setStatus({ type: 'success', message: `${isRemote ? '🚛 Nakliye: ' : ''}${scanType === 'in' ? 'Giriş' : 'Çıkış'} işleminiz başarıyla kaydedildi.` });
       }
 
-      setStatus({ type: 'success', message: `${scanType === 'in' ? 'Giriş' : 'Çıkış'} işleminiz başarıyla kaydedildi.` });
-      setShowScanner(false);
+
+      // Mükerrer koruma: Son başarılı okutma zamanını kaydet
+      lastScanTimestamp.current = Date.now();
+      setRemoteNote('');
       setScanType(null);
     } catch (error) {
       console.error("Save log error:", error);
@@ -732,6 +1138,7 @@ export default function App() {
       isProcessingScan.current = false;
     }
   };
+
 
   const updateSettings = async (e: any) => {
     e.preventDefault();
@@ -761,7 +1168,6 @@ export default function App() {
       shiftStart: formData.get('shiftStart') as string || '09:00',
       shiftEnd: formData.get('shiftEnd') as string || '18:00',
       breakRules: breakRules,
-      _system_key: 'pdk_system_secret_2026'
     };
 
     try {
@@ -890,60 +1296,96 @@ export default function App() {
 
   const handleManualLog = async (e: React.FormEvent) => {
     e.preventDefault();
-    const targetId = selectedPersonnelId || selectedDayDetails?.userId;
-    if (!targetId || !profile) return;
+    // TargetId: açık modaldan, seçili personelden veya mevcut log'dan al
+    const targetId = selectedDayDetails?.userId || selectedPersonnelId || editingLog?.userId || user?.uid;
+    
 
-    // Authorization: Admin can do anything. Manager can do for their employees. User can do for themselves.
-    const targetUser = allUsers.find(u => u.uid === targetId);
-    if (!targetUser) return;
-
-    let isAuthorized = profile.role === 'admin' || profile.uid === targetId;
-    if (!isAuthorized && targetUser.managerId === profile.uid) {
-      isAuthorized = true;
-    }
-
-    if (!isAuthorized) {
-      setStatus({ type: 'error', message: 'Bu işlemi yapma yetkiniz yok.' });
+    
+    if (!targetId || !profile) {
+      setStatus({ type: 'error', message: 'Hedef kullanıcı veya profil bilgisi eksik.' });
       return;
     }
 
-    const timestamp = new Date(`${manualLogDate}T${manualLogTime}`);
+    // Hedef kullanıcıyı bul: allUsers'da, kendi profilinde veya log'daki userName ile
+    const targetUser: UserProfile | null = 
+      allUsers.find(u => u.uid === targetId) || 
+      (profile.uid === targetId ? profile : null);
+    
+    if (!targetUser) {
+      setStatus({ type: 'error', message: 'Kullanıcı bulunamadı. Lütfen sayfayı yenileyip tekrar deneyin.' });
+      return;
+    }
+
+    // Yetki kuralları:
+    // - 'admin' rolü: herkese yapabilir
+    // - 'mudur' / 'takim_lideri': sadece managerId'si kendi uid'i olan personele
+    // - Diğer roller: sadece kendi kaydına
+    const isSystemAdmin = profile.role === 'admin';
+    const isManagerOf = targetUser.managerId === profile.uid;
+    const isSelf = profile.uid === targetId;
+    
+    const isAuthorized = isSystemAdmin || isManagerOf || isSelf;
+
+    if (!isAuthorized) {
+      setStatus({ type: 'error', message: 'Bu personelin kaydını düzenleme yetkiniz yok.' });
+      return;
+    }
+
+    const timestamp = new Date(`${manualLogDate}T${manualLogTime}:00`);
+    if (isNaN(timestamp.getTime())) {
+      setStatus({ type: 'error', message: 'Geçersiz tarih veya saat.' });
+      return;
+    }
     const auditInfo = `Manuel: ${profile.name}`;
 
     try {
+      const isAdminOrManager = profile.role === 'admin' || targetUser.managerId === profile.uid;
+      const newStatus = isAdminOrManager ? 'success' : 'pending';
+
       if (editingLog?.id) {
-        await setDoc(doc(db, 'attendance', editingLog.id), {
-          ...editingLog,
+        // Mevcut kaydı güncelle
+        await updateDoc(doc(db, 'attendance', editingLog.id), {
           timestamp: timestamp,
           type: manualLogType,
           ipAddress: auditInfo,
-          status: 'success',
-          _system_key: 'pdk_system_secret_2026'
+          status: newStatus,
+          ...(isAdminOrManager ? { manualEntry: true, isRemote: false, remoteNote: null } : {}),
         });
         setStatus({ type: 'success', message: 'Kayıt güncellendi.' });
       } else {
+        // Yeni kayıt ekle
         await addDoc(collection(db, 'attendance'), {
           userId: targetId,
           userName: targetUser.name,
           timestamp: timestamp,
           type: manualLogType,
           ipAddress: auditInfo,
-          status: 'success',
-          _system_key: 'pdk_system_secret_2026'
+          status: newStatus,
+          manualEntry: true,
+          isRemote: !isAdminOrManager,
+          ...(isAdminOrManager ? {} : { remoteNote: 'Geçmiş Kayıt (Onay Bekliyor)' }),
         });
-        setStatus({ type: 'success', message: 'Kayıt eklendi.' });
+        setStatus({ type: 'success', message: isAdminOrManager ? 'Kayıt eklendi.' : 'Kayıt eklendi, yönetici onayı bekleniyor.' });
+        
+        if (!isAdminOrManager) {
+          fetch('/api/notify/checkin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.uid, userName: profile.name, type: manualLogType, isRemote: true, remoteNote: 'Geçmiş Manuel Kayıt Eklendi' })
+          }).catch(() => {});
+        }
       }
       
-      // Check for auto-overtime
+      // Çıkış ise otomatik mesai kontrolü
       if (manualLogType === 'out') {
         await checkAndCreateAutoOvertime(targetId, targetUser.name, timestamp, 'out');
       }
 
       setShowManualLogModal(false);
       setEditingLog(null);
-    } catch (error) {
-      console.error("Manual log error:", error);
-      setStatus({ type: 'error', message: 'Kayıt işlemi başarısız.' });
+    } catch (error: any) {
+      console.error('Manual log error:', error);
+      setStatus({ type: 'error', message: `Kayıt başarısız: ${error?.message || error?.code || 'Bilinmeyen hata'}` });
     }
   };
 
@@ -1007,7 +1449,6 @@ export default function App() {
           description: `Otomatik Sistem Kaydı (${format(timestamp, 'HH:mm')} çıkış)`,
           status: 'pending',
           createdAt: serverTimestamp(),
-          _system_key: 'pdk_system_secret_2026'
         });
       } catch (error) {
         console.error("Auto overtime error:", error);
@@ -1022,7 +1463,6 @@ export default function App() {
       await setDoc(doc(db, 'users', uid), { 
         ...allUsers.find(u => u.uid === uid), 
         role: 'deleted',
-        _system_key: 'pdk_system_secret_2026'
       }); 
       setStatus({ type: 'success', message: 'Personel kaydı pasif hale getirildi.' });
       setDeletingUser(null);
@@ -1061,9 +1501,18 @@ export default function App() {
     try {
       let attachmentUrl = '';
       if (reportFile) {
-        const fileRef = ref(storage, `reports/${user.uid}/${Date.now()}_${reportFile.name}`);
-        const snapshot = await uploadBytes(fileRef, reportFile);
-        attachmentUrl = await getDownloadURL(snapshot.ref);
+        if (reportFile.size > 800 * 1024) {
+          setStatus({ type: 'error', message: 'Dosya boyutu çok büyük. Lütfen 800 KB altında bir dosya seçin veya resmi kırpın.' });
+          setUploading(false);
+          return;
+        }
+        
+        attachmentUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Dosya okunamadı.'));
+          reader.readAsDataURL(reportFile);
+        });
       }
 
       await addDoc(collection(db, 'leaveRequests'), {
@@ -1078,8 +1527,18 @@ export default function App() {
         attachmentUrl,
         status: 'pending',
         createdAt: serverTimestamp(),
-        _system_key: 'pdk_system_secret_2026'
       });
+      // Yöneticiye push bildirimi gönder
+      fetch('/api/notify/newrequest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          userName: profile.name,
+          requestType: 'leave',
+          managerId: profile.managerId || 'admin_initial'
+        })
+      }).catch(() => {});
       setStatus({ type: 'success', message: leaveType === 'report' ? 'Raporunuz iletildi.' : 'İzin talebiniz iletildi.' });
       (e.target as HTMLFormElement).reset();
       setLeaveStartDate('');
@@ -1087,14 +1546,42 @@ export default function App() {
       setCalcLeaveDays(0);
       setReportFile(null);
       setLeaveType('annual');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Leave request error:", error);
-      setStatus({ type: 'error', message: 'Talep iletilirken hata oluştu.' });
+      const msg = error?.message || 'Bilinmeyen bir hata oluştu.';
+      setStatus({ type: 'error', message: `Talep iletilirken hata oluştu: ${msg}` });
     } finally {
       setUploading(false);
     }
   };
 
+  const handleViewAttachment = (base64Str: string) => {
+    setViewingAttachment(base64Str);
+  };
+
+  const handleDownloadAndOpen = () => {
+    if (!viewingAttachment) return;
+    try {
+      const blob = dataURItoBlob(viewingAttachment);
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = viewingAttachment.startsWith('data:image') ? 'rapor_belgesi.png' : 'rapor_belgesi.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      if (!viewingAttachment.startsWith('data:image')) {
+        window.open(url, '_blank');
+      }
+      
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch (e) {
+      console.error(e);
+      setStatus({ type: 'error', message: 'Dosya indirilirken hata oluştu.' });
+    }
+  };
   const submitOvertimeRequest = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user || !profile) return;
@@ -1119,8 +1606,18 @@ export default function App() {
         description,
         status: 'pending',
         createdAt: serverTimestamp(),
-        _system_key: 'pdk_system_secret_2026'
       });
+      // Yöneticiye push bildirimi gönder
+      fetch('/api/notify/newrequest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          userName: profile.name,
+          requestType: 'overtime',
+          managerId: profile.managerId || 'admin_initial'
+        })
+      }).catch(() => {});
       setStatus({ type: 'success', message: 'Fazla mesai talebiniz iletildi.' });
       (e.target as HTMLFormElement).reset();
       setOvertimeEndTime('');
@@ -1130,7 +1627,7 @@ export default function App() {
     }
   };
 
-  const handleRequestAction = async (collectionName: 'leaveRequests' | 'overtimeRequests', requestId: string, action: 'approved' | 'rejected') => {
+  const handleRequestAction = async (collectionName: 'leaveRequests' | 'overtimeRequests' | 'attendance', requestId: string, action: 'approved' | 'rejected') => {
     try {
       const requestRef = doc(db, collectionName, requestId);
       const requestSnap = await getDoc(requestRef);
@@ -1147,22 +1644,38 @@ export default function App() {
           const currentBalance = getEffectiveLeaveBalance(userData);
           await setDoc(userRef, { 
             ...userData, 
-            leaveBalance: currentBalance - requestData.days,
-            _system_key: 'pdk_system_secret_2026'
+            leaveBalance: currentBalance - requestData.days
           });
         }
       }
 
+      const finalStatus = collectionName === 'attendance' 
+        ? (action === 'approved' ? 'success' : 'error') 
+        : action;
+
       await setDoc(requestRef, { 
         ...requestData, 
-        status: action,
-        _system_key: 'pdk_system_secret_2026'
+        status: finalStatus,
       });
+
+      // Push bildirimi gönder (arka planda, hata olsa bile devam)
+      fetch('/api/notify/approval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetUid: requestData.userId,
+          isApproved: action === 'approved',
+          requestType: collectionName === 'leaveRequests' ? 'leave' : collectionName === 'attendance' ? 'manual' : 'overtime',
+          actorName: profile?.name || 'Yönetici'
+        })
+      }).catch(() => {});
+
       setStatus({ type: 'success', message: `Talep ${action === 'approved' ? 'onaylandı' : 'reddedildi'}.` });
     } catch (error) {
       setStatus({ type: 'error', message: 'İşlem sırasında hata oluştu.' });
     }
   };
+
 
   const handleDeleteLeave = async (id: string, reason: string) => {
     if (!profile || profile.role !== 'admin' || !deletingLeave) return;
@@ -1177,7 +1690,6 @@ export default function App() {
         deleted: true,
         deleteReason: reason,
         deletedBy: profile.uid,
-        _system_key: 'pdk_system_secret_2026'
       }, { merge: true });
 
       // 2. Revert balance if annual
@@ -1222,7 +1734,6 @@ export default function App() {
       days: parseInt(formData.get('days') as string),
       reason: formData.get('reason') as string,
       status: formData.get('status') as string,
-      _system_key: 'pdk_system_secret_2026'
     };
 
     try {
@@ -1253,6 +1764,7 @@ export default function App() {
     const birthDate = formData.get('birthDate') as string;
     const allowedDevice = formData.get('allowedDevice') as string;
     const deviceId = formData.get('deviceId') as string;
+    const canRemoteCheckIn = formData.get('canRemoteCheckIn') === 'true';
 
     try {
       const response = await fetch('/api/users/update', {
@@ -1261,7 +1773,7 @@ export default function App() {
         body: JSON.stringify({ 
           adminUid: profile.uid,
           targetUid: editingUser.uid,
-          updates: { name, title, password, role, managerId, leaveBalance, startDate, birthDate, allowedDevice, deviceId }
+          updates: { name, title, password, role, managerId, leaveBalance, startDate, birthDate, allowedDevice, deviceId, canRemoteCheckIn }
         })
       });
 
@@ -1375,15 +1887,18 @@ export default function App() {
           <p className="text-center text-xs text-zinc-600">
             Giriş bilgilerinizi yöneticinizden temin edebilirsiniz.
           </p>
+          <div className="mt-4 text-center text-[10px] text-zinc-700 font-mono">
+            Cihaz Kimliği: {getOrCreateDeviceId()}
+          </div>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 pb-20 text-zinc-100">
+    <div className="min-h-screen theme-bg-base pb-24 theme-text transition-colors duration-200">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b theme-border-subtle bg-black/5 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-4xl items-center justify-between p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-white">
@@ -1394,20 +1909,31 @@ export default function App() {
               <p className="text-[10px] uppercase tracking-widest text-zinc-500">Personel Takip</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden text-right md:block">
-              <p className="text-sm font-medium">{profile?.name}</p>
+              <p className="text-sm font-medium theme-text">{profile?.name}</p>
               <p className="text-xs text-zinc-500">{profile?.role === 'admin' ? 'Yönetici' : 'Personel'}</p>
             </div>
+
+            {/* Tema Değiştirici */}
+            <button
+              onClick={cycleTheme}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900/10 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-orange-500"
+              title={`Tema: ${theme === 'dark' ? 'Koyu' : theme === 'light' ? 'Açık' : 'Sistem'}`}
+            >
+              {theme === 'dark' ? <Moon size={18} /> : theme === 'light' ? <Sun size={18} /> : <Monitor size={18} />}
+            </button>
             
             <div className="relative">
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+                className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900/10 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-orange-500"
               >
                 <Bell size={20} />
-                {notifications.some(n => !n.read) && (
-                  <span className="absolute top-0 right-0 h-3 w-3 rounded-full border-2 border-zinc-950 bg-red-500" />
+                {notifications.filter(n => !n.read).length > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full border-2 border-white dark:border-zinc-950 bg-red-500 flex items-center justify-center text-[9px] font-black text-white">
+                    {notifications.filter(n => !n.read).length > 99 ? '99+' : notifications.filter(n => !n.read).length}
+                  </span>
                 )}
               </button>
 
@@ -1424,8 +1950,27 @@ export default function App() {
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       className="absolute right-0 mt-2 w-72 origin-top-right rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl z-20 overflow-hidden"
                     >
-                      <div className="border-b border-zinc-800 px-4 py-3 bg-zinc-800/50">
-                        <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">Bildirimler</p>
+                      <div className="border-b border-zinc-800 px-4 py-3 bg-zinc-800/50 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">Bildirimler</p>
+                          {notifications.filter(n => !n.read).length > 0 && (
+                            <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 flex items-center justify-center text-[9px] font-black text-white">
+                              {notifications.filter(n => !n.read).length}
+                            </span>
+                          )}
+                        </div>
+                        {notifications.some(n => !n.read) && (
+                          <button
+                            onClick={async () => {
+                              for (const n of notifications.filter(x => !x.read)) {
+                                if (n.id) await markNotificationRead(n.id);
+                              }
+                            }}
+                            className="text-[10px] text-orange-500 font-bold hover:text-orange-400 transition"
+                          >
+                            Tümünü Okundu
+                          </button>
+                        )}
                       </div>
                       <div className="max-h-80 overflow-y-auto">
                         {notifications.length === 0 ? (
@@ -1436,7 +1981,23 @@ export default function App() {
                           notifications.map(notif => (
                             <div 
                               key={notif.id}
-                              onClick={() => markNotificationRead(notif.id!)}
+                              onClick={() => {
+                                markNotificationRead(notif.id!);
+                                if (notif.link) {
+                                  // link -> uygulama rotası normalize et
+                                  const routeMap: Record<string, string> = {
+                                    '/takvim': '/home',
+                                    '/hareketler': '/movements',
+                                    '/izinler': '/leaves',
+                                    '/onaylar': '/approvals',
+                                    '/mesai': '/leaves',
+                                    '/profil': '/profile',
+                                  };
+                                  const route = routeMap[notif.link] ?? notif.link;
+                                  navigate(route);
+                                  setShowNotifications(false);
+                                }
+                              }}
                               className={cn(
                                 "border-b border-zinc-800 p-4 transition-colors hover:bg-zinc-800/50 cursor-pointer relative",
                                 !notif.read && "bg-orange-500/5"
@@ -1452,14 +2013,27 @@ export default function App() {
                                   notif.type === 'success' ? "bg-emerald-500/10 text-emerald-500" :
                                   "bg-blue-500/10 text-blue-500"
                                 )}>
-                                  <Info size={12} />
+                                  {notif.type === 'success' ? <CheckCircle size={12} /> :
+                                   notif.type === 'error' ? <AlertCircle size={12} /> :
+                                   <Bell size={12} />}
                                 </div>
-                                <div className="space-y-1">
-                                  <p className="text-xs font-bold leading-none">{notif.title}</p>
-                                  <p className="text-[10px] text-zinc-500 leading-relaxed capitalize-first">{notif.message}</p>
-                                  <p className="text-[8px] text-zinc-600 uppercase font-black">
-                                    {format(notif.createdAt.toDate(), 'd MMM HH:mm')}
-                                  </p>
+                                <div className="space-y-1 flex-1 min-w-0">
+                                  <p className="text-xs font-bold leading-none truncate">{notif.title}</p>
+                                  <p className="text-[10px] text-zinc-500 leading-relaxed line-clamp-2">{notif.message}</p>
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-[8px] text-zinc-600 uppercase font-black">
+                                      {notif.createdAt?.toDate
+                                        ? format(notif.createdAt.toDate(), 'd MMM HH:mm', { locale: tr })
+                                        : typeof notif.createdAt === 'string'
+                                          ? new Date(notif.createdAt).toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' }) + ' ' + new Date(notif.createdAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul', day: 'numeric', month: 'short' })
+                                          : ''}
+                                    </p>
+                                    {notif.link && (
+                                      <span className="text-[9px] text-orange-500 font-bold flex items-center gap-0.5">
+                                        Git <ChevronRight size={8} />
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -1472,6 +2046,17 @@ export default function App() {
               </AnimatePresence>
             </div>
 
+            <button
+              onClick={() => { navigate('/profile'); }}
+              className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden bg-zinc-900 text-zinc-400 transition-colors hover:ring-2 hover:ring-orange-500 shrink-0"
+              title="Profil"
+            >
+              {profile?.avatarUrl ? (
+                <img src={profile.avatarUrl} alt={profile.name} className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-sm font-black text-orange-500">{profile?.name?.[0]?.toUpperCase()}</span>
+              )}
+            </button>
             <button 
               onClick={handleLogout}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
@@ -1482,7 +2067,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl p-4 space-y-6">
+      <main className="mx-auto max-w-4xl p-4 md:pl-28 space-y-6">
         {/* Status Messages */}
         <AnimatePresence>
           {status && (
@@ -1506,53 +2091,142 @@ export default function App() {
 
         {activeTab === 'home' && (
           <>
+            {/* Çevrimdışı Mod Uyarısı */}
+            {!isOnline && (
+              <div className="flex items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+                <WifiOff size={18} className="text-amber-400 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-amber-400">Çevrimdışı Mod</p>
+                  <p className="text-xs text-amber-400/70">İnternet yok. Hareketler cihazınıza kaydedilecek, bağlantı gelince otomatik gönderilecek.</p>
+                </div>
+              </div>
+            )}
+            {offlineQueueCount > 0 && isOnline && (
+              <div className="flex items-center gap-3 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-4">
+                <Clock size={18} className="text-blue-400 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-blue-400">{offlineQueueCount} Bekleyen Hareket</p>
+                  <p className="text-xs text-blue-400/70">İnternet geldi. Senkronize ediliyor...</p>
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-4">
               <button
-                onClick={() => { setScanType('in'); setShowScanner(true); }}
+                onClick={() => {
+                  if (profile?.canRemoteCheckIn) {
+                    // Uzaktan yetkili: her zaman yöntem seçim modal'ı göster
+                    setPendingScanType('in');
+                    setShowRemoteModal(true);
+                  } else {
+                    // Yetkisiz: direkt QR scanner
+                    setScanType('in'); setShowScanner(true);
+                  }
+                }}
                 className="group relative flex flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl bg-emerald-600 p-8 text-white transition-all hover:bg-emerald-500"
               >
                 <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 transition-transform group-hover:scale-150" />
                 <LogIn size={40} />
                 <span className="text-lg font-bold">Giriş Yap</span>
+                {profile?.canRemoteCheckIn && <span className="text-[10px] opacity-70 flex items-center gap-1"><Truck size={10} /> Nakliye Yetkili</span>}
               </button>
               <button
-                onClick={() => { setScanType('out'); setShowScanner(true); }}
+                onClick={() => {
+                  if (profile?.canRemoteCheckIn) {
+                    setPendingScanType('out');
+                    setShowRemoteModal(true);
+                  } else {
+                    setScanType('out'); setShowScanner(true);
+                  }
+                }}
                 className="group relative flex flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl bg-zinc-900 p-8 text-white transition-all hover:bg-zinc-800"
               >
                 <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/5 transition-transform group-hover:scale-150" />
                 <LogOut size={40} />
                 <span className="text-lg font-bold">Çıkış Yap</span>
+                {profile?.canRemoteCheckIn && <span className="text-[10px] opacity-70 flex items-center gap-1"><Truck size={10} /> Nakliye Yetkili</span>}
               </button>
             </div>
 
+
+            {/* Yönetici Dashboard Özet */}
+            {profile?.role === 'admin' && dashboardStats && (
+              <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <button
+                  onClick={() => setDashboardStatModal({ title: 'Şu An Ofiste', color: 'emerald', icon: <LogIn size={18} />, people: dashboardStats.presentList })}
+                  className="rounded-2xl border theme-border bg-emerald-500/10 p-4 text-left hover:bg-emerald-500/20 transition-colors cursor-pointer"
+                >
+                  <div className="text-2xl font-black text-emerald-500">{dashboardStats.present}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600/70">Şu An Ofiste</div>
+                  <div className="text-[9px] text-emerald-700/60 mt-1">Detay için tıkla</div>
+                </button>
+                <button
+                  onClick={() => setDashboardStatModal({ title: 'İzinli', color: 'orange', icon: <FileText size={18} />, people: dashboardStats.onLeaveList })}
+                  className="rounded-2xl border theme-border bg-orange-500/10 p-4 text-left hover:bg-orange-500/20 transition-colors cursor-pointer"
+                >
+                  <div className="text-2xl font-black text-orange-500">{dashboardStats.onLeave}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600/70">İzinli</div>
+                  <div className="text-[9px] text-orange-700/60 mt-1">Detay için tıkla</div>
+                </button>
+                <button
+                  onClick={() => setDashboardStatModal({ title: 'Geç Kalan', color: 'red', icon: <Clock size={18} />, people: dashboardStats.lateList })}
+                  className="rounded-2xl border theme-border bg-red-500/10 p-4 text-left hover:bg-red-500/20 transition-colors cursor-pointer"
+                >
+                  <div className="text-2xl font-black text-red-500">{dashboardStats.late}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-red-600/70">Geç Kalan</div>
+                  <div className="text-[9px] text-red-700/60 mt-1">Detay için tıkla</div>
+                </button>
+                <button
+                  onClick={() => setDashboardStatModal({ title: 'Gelmeyen', color: 'zinc', icon: <UserX size={18} />, people: dashboardStats.absentList })}
+                  className="rounded-2xl border theme-border theme-bg-secondary p-4 text-left hover:bg-zinc-800/40 transition-colors cursor-pointer"
+                >
+                  <div className="text-2xl font-black theme-text">{dashboardStats.absent}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Gelmeyen</div>
+                  <div className="text-[9px] text-zinc-600 mt-1">Detay için tıkla</div>
+                </button>
+              </div>
+            )}
+
+            {/* Personel Geç Kalma Uyarısı */}
+            {profile?.role !== 'admin' && userLateCountThisMonth > 0 && (
+              <div className="mb-6 flex items-center gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4">
+                <AlertTriangle size={24} className="text-red-500 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-red-500">Geç Kalma Uyarısı</p>
+                  <p className="text-xs text-red-500/70">Bu ay içerisinde <strong>{userLateCountThisMonth} kez</strong> mesai başlangıç saati ({settings?.shiftStart || '08:00'}) sonrasında giriş yaptınız.</p>
+                </div>
+              </div>
+            )}
+
             {/* Info Cards */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="rounded-2xl border border-zinc-900 bg-zinc-900/30 p-4">
+              <div className="rounded-2xl border theme-border theme-bg-secondary p-4">
                 <div className="mb-2 flex items-center gap-2 text-zinc-500">
-                  <Wifi size={16} />
+                  {isOnline ? <Wifi size={16} /> : <WifiOff size={16} className="text-amber-400" />}
                   <span className="text-xs font-semibold uppercase tracking-wider">Ağ Durumu</span>
                 </div>
-                <p className="text-sm font-medium">{currentIp || 'Tespit ediliyor...'}</p>
+                <p className="text-sm font-medium theme-text">{isOnline ? (currentIp || 'Tespit ediliyor...') : 'Çevrimdışı'}</p>
                 <p className="text-[10px] text-zinc-600">Mevcut IP Adresiniz</p>
               </div>
-              <div className="rounded-2xl border border-zinc-900 bg-zinc-900/30 p-4">
+              <div className="rounded-2xl border theme-border theme-bg-secondary p-4">
                 <div className="mb-2 flex items-center gap-2 text-zinc-500">
                   <MapPin size={16} />
                   <span className="text-xs font-semibold uppercase tracking-wider">Konum</span>
                 </div>
-                <p className="text-sm font-medium">Aktif</p>
+                <p className="text-sm font-medium theme-text">Aktif</p>
                 <p className="text-[10px] text-zinc-600">GPS Doğrulaması</p>
               </div>
-              <div className="rounded-2xl border border-zinc-900 bg-zinc-900/30 p-4">
+              <div className="rounded-2xl border theme-border theme-bg-secondary p-4">
                 <div className="mb-2 flex items-center gap-2 text-zinc-500">
                   <Shield size={16} />
                   <span className="text-xs font-semibold uppercase tracking-wider">Güvenlik</span>
                 </div>
-                <p className="text-sm font-medium">QR + IP Korumalı</p>
+                <p className="text-sm font-medium theme-text">QR + IP Korumalı</p>
                 <p className="text-[10px] text-zinc-600">Sistem Durumu</p>
               </div>
             </div>
+
 
             {/* Attendance Logs (Only for non-admins or if admin wants to see their own) */}
             {profile?.role !== 'admin' && (
@@ -1580,8 +2254,9 @@ export default function App() {
               <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 text-center text-[10px] font-bold text-zinc-500 uppercase tracking-tight">
                 {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => <div key={day} className="truncate">{day}</div>)}
               </div>
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-7 gap-2" key={`cal-${selectedMonth}-${logs.filter(l => l.userId === user?.uid).length}`}>
                 {(() => {
+
                   const results = [];
                   const today = new Date();
                   const [year, month] = selectedMonth.split('-').map(Number);
@@ -1622,7 +2297,10 @@ export default function App() {
                     ).reduce((sum, r) => sum + r.hours, 0);
 
                     const isFuture = dayDate > today;
-                    const hasSuccessLogs = dayInLogs.some(l => l.status !== 'error' && !l.deleted);
+                    const holiday = getHoliday(dateStr);
+                    const isHolidayDay = !!holiday;
+                    const isPending = dayInLogs.some(l => l.status === 'pending' && !l.deleted);
+                    const hasSuccessLogs = dayInLogs.some(l => l.status !== 'error' && l.status !== 'pending' && !l.deleted);
                     const hasErrorLogs = dayInLogs.some(l => l.status === 'error' && !l.deleted);
 
                     results.push(
@@ -1631,19 +2309,28 @@ export default function App() {
                           onClick={() => setSelectedDayDetails({ date: dateStr, userId: user?.uid! })}
                           className={cn(
                             "aspect-square rounded-xl border p-1 flex flex-col items-center justify-between transition-all hover:scale-[1.02] hover:shadow-xl relative overflow-hidden",
-                            hasErrorLogs && !hasSuccessLogs ? "border-red-500/30 bg-red-500/5" :
+                            hasErrorLogs && !hasSuccessLogs && !isPending ? "border-red-500/30 bg-red-500/5" :
+                            isPending ? "border-amber-500/30 bg-amber-500/5 shadow-[0_0_15px_rgba(245,158,11,0.05)]" :
                             hasSuccessLogs ? "border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.05)]" : 
                             leave ? "border-orange-500/30 bg-orange-500/5 shadow-[0_0_10px_rgba(249,115,22,0.1)]" : 
+                            isHolidayDay ? "border-red-500/30 bg-red-500/5 shadow-[0_0_10px_rgba(239,68,68,0.1)]" :
                             isSunday ? "border-zinc-900 bg-zinc-950/30" : 
                             isFuture ? "border-zinc-900/30 bg-transparent opacity-30" : "border-zinc-900 bg-zinc-950/10"
                           )}
                         >
                           <span className={cn(
                             "text-[8px] font-bold absolute top-1 left-1.5",
-                            isSunday ? "text-red-500/50" : "text-zinc-600"
+                            (isSunday || isHolidayDay) ? "text-red-500/50" : "text-zinc-600"
                           )}>
                             {d}
                           </span>
+                          
+                          {isHolidayDay && !hasSuccessLogs && !leave && (
+                            <span className="hidden sm:block absolute top-1 right-1 text-[7px] font-black text-red-500 uppercase max-w-[70%] text-right truncate">
+                              {holiday.name}
+                            </span>
+                          )}
+
                           
                           <div className="flex-1 flex flex-col items-start justify-center w-full gap-1 mt-3 px-1">
                             {hasSuccessLogs && (
@@ -1749,12 +2436,12 @@ export default function App() {
                     {/* Desktop Table View */}
                     <table className="hidden md:table w-full text-left">
                       <tbody className="divide-y divide-zinc-900">
-                        {logs.filter(l => l.userId === user?.uid).length === 0 ? (
+                        {logs.filter(l => l.userId === user?.uid && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM') === selectedMonth).length === 0 ? (
                           <tr>
-                            <td className="p-8 text-center text-zinc-500 text-xs italic">Henüz kayıt bulunmuyor.</td>
+                            <td className="p-8 text-center text-zinc-500 text-xs italic">Bu ay için kayıt bulunmuyor.</td>
                           </tr>
                         ) : (
-                          logs.filter(l => l.userId === user?.uid)
+                          logs.filter(l => l.userId === user?.uid && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM') === selectedMonth)
                             .sort((a,b) => (b.timestamp?.toDate?.()?.getTime() || 0) - (a.timestamp?.toDate?.()?.getTime() || 0))
                             .map((log) => (
                             <tr key={log.id} className="hover:bg-zinc-900/30 transition-colors">
@@ -1767,14 +2454,15 @@ export default function App() {
                                 <div className={cn(
                                   "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase",
                                   log.status === 'error' ? "bg-red-500/10 text-red-500" :
-                                  log.type === 'in' ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-800 text-zinc-400"
+                                  log.status === 'pending' ? "bg-amber-500/10 text-amber-500" :
+                                  log.type === 'in' ? "bg-emerald-500/10 text-emerald-500" : "bg-orange-500/10 text-orange-500"
                                 )}>
-                                  {log.status === 'error' ? <ShieldAlert size={10} /> : log.type === 'in' ? <LogIn size={10} /> : <LogOut size={10} />}
-                                  {log.status === 'error' ? 'Hata' : (log.type === 'in' ? 'Giriş' : 'Çıkış')}
+                                  {log.status === 'error' ? <ShieldAlert size={10} /> : log.status === 'pending' ? <Clock3 size={10} /> : log.type === 'in' ? <LogIn size={10} /> : <LogOut size={10} />}
+                                  {log.status === 'error' ? 'Hata' : log.status === 'pending' ? 'Bekliyor' : (log.type === 'in' ? 'Giriş' : 'Çıkış')}
                                 </div>
                               </td>
                               <td className="p-4 text-right">
-                                <p className="text-[10px] text-zinc-400 font-bold">{log.status === 'error' ? log.errorMessage : ''}</p>
+                                <p className="text-[10px] text-zinc-400 font-bold">{log.status === 'error' ? log.errorMessage : log.status === 'pending' ? 'Yönetici onayı bekleniyor' : ''}</p>
                                 <p className="text-[10px] text-zinc-600 font-mono">{log.ipAddress}</p>
                               </td>
                             </tr>
@@ -1785,10 +2473,10 @@ export default function App() {
 
                     {/* Mobile Card View */}
                     <div className="md:hidden divide-y divide-zinc-900">
-                      {logs.filter(l => l.userId === user?.uid).length === 0 ? (
-                        <div className="p-8 text-center text-zinc-500 text-xs italic">Henüz kayıt bulunmuyor.</div>
+                      {logs.filter(l => l.userId === user?.uid && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM') === selectedMonth).length === 0 ? (
+                        <div className="p-8 text-center text-zinc-500 text-xs italic">Bu ay için kayıt bulunmuyor.</div>
                       ) : (
-                        logs.filter(l => l.userId === user?.uid)
+                        logs.filter(l => l.userId === user?.uid && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM') === selectedMonth)
                           .sort((a,b) => (b.timestamp?.toDate?.()?.getTime() || 0) - (a.timestamp?.toDate?.()?.getTime() || 0))
                           .map((log) => (
                           <div key={log.id} className="p-4 flex items-center justify-between hover:bg-zinc-900/30 transition-colors">
@@ -1801,9 +2489,10 @@ export default function App() {
                             <div className={cn(
                               "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold uppercase",
                               log.status === 'error' ? "bg-red-500/10 text-red-500" :
-                              log.type === 'in' ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-800 text-zinc-400"
+                              log.status === 'pending' ? "bg-amber-500/10 text-amber-500" :
+                              log.type === 'in' ? "bg-emerald-500/10 text-emerald-500" : "bg-orange-500/10 text-orange-500"
                             )}>
-                              {log.status === 'error' ? 'Hatalı' : (log.type === 'in' ? 'Giriş' : 'Çıkış')}
+                              {log.status === 'error' ? 'Hata' : log.status === 'pending' ? 'Bekliyor' : (log.type === 'in' ? 'Giriş' : 'Çıkış')}
                             </div>
                           </div>
                         ))
@@ -1833,8 +2522,12 @@ export default function App() {
                       className="flex items-center justify-between rounded-2xl border border-zinc-900 bg-zinc-900/20 p-4 hover:bg-zinc-900/40 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 font-bold">
-                          {u.name[0]}
+                        <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 font-bold overflow-hidden shrink-0">
+                          {u.avatarUrl ? (
+                            <img src={u.avatarUrl} alt={u.name} className="h-full w-full object-cover" />
+                          ) : (
+                            u.name[0]
+                          )}
                         </div>
                         <div className="text-left">
                           <p className="font-bold">{u.name}</p>
@@ -2332,10 +3025,28 @@ export default function App() {
                     />
                   </div>
                   <div className="md:col-span-2">
+                    <label className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 cursor-pointer hover:border-orange-500/50 transition-colors">
+                      <input 
+                        name="canRemoteCheckIn"
+                        type="checkbox"
+                        value="true"
+                        className="h-4 w-4 accent-orange-500"
+                      />
+                      <div>
+                        <p className="text-sm font-semibold text-white flex items-center gap-2">
+                          <Truck size={14} className="text-orange-500" />
+                          Nakliye / Uzaktan Giriş Yetkisi
+                        </p>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis dışından (nakliyede) da giriş-çıkış yapabilir. Konumu kaydedilir, yöneticileri bildirim alır.</p>
+                      </div>
+                    </label>
+                  </div>
+                  <div className="md:col-span-2">
                     <button className="w-full rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">
                       Personel Ekle
                     </button>
                   </div>
+
                 </form>
               </div>
             )}
@@ -2356,8 +3067,12 @@ export default function App() {
                     <tr key={u.uid} className="hover:bg-zinc-900/30 transition-colors">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold shrink-0">
-                            {u.name[0]}
+                          <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden">
+                            {u.avatarUrl ? (
+                              <img src={u.avatarUrl} alt={u.name} className="h-full w-full object-cover" />
+                            ) : (
+                              u.name[0]
+                            )}
                           </div>
                           <div className="flex flex-col">
                             <span className="font-medium leading-none">{u.name}</span>
@@ -2404,8 +3119,12 @@ export default function App() {
                 {allUsers.filter(u => u.role !== 'deleted').map((u) => (
                   <div key={u.uid} className="p-4 flex items-center justify-between hover:bg-zinc-900/30">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-bold border border-zinc-700">
-                        {u.name[0]}
+                      <div className="h-10 w-10 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-bold border border-zinc-700 overflow-hidden shrink-0">
+                        {u.avatarUrl ? (
+                          <img src={u.avatarUrl} alt={u.name} className="h-full w-full object-cover" />
+                        ) : (
+                          u.name[0]
+                        )}
                       </div>
                       <div className="space-y-0.5">
                         <p className="font-bold text-white leading-none">{u.name}</p>
@@ -2904,7 +3623,7 @@ export default function App() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="space-y-4">
                 <h3 className="text-lg font-bold flex items-center gap-2">
                   <FileText size={20} className="text-orange-500" /> İzin Onayları
@@ -2968,6 +3687,41 @@ export default function App() {
                   )}
                 </div>
               </div>
+
+              {/* Manuel Kayıt Onayları */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Truck size={20} className="text-emerald-500" /> Manuel Kayıt Onayları
+                </h3>
+                <div className="space-y-3">
+                  {logs.filter(l => l.status === 'pending' && l.manualEntry && l.userId !== user.uid).length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-zinc-800 p-8 text-center text-zinc-500 text-sm">
+                      Onay bekleyen manuel kayıt bulunmuyor.
+                    </div>
+                  ) : (
+                    logs.filter(l => l.status === 'pending' && l.manualEntry && l.userId !== user.uid).map(req => (
+                      <div key={req.id} className="rounded-2xl border border-zinc-900 bg-zinc-900/10 p-4 space-y-3 group relative">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-bold text-sm">{req.userName}</p>
+                            <p className="text-[10px] text-zinc-500">{req.timestamp?.toDate ? format(req.timestamp.toDate(), 'd MMM yyyy, HH:mm') : ''} - {req.type === 'in' ? 'Giriş' : 'Çıkış'}</p>
+                          </div>
+                        </div>
+                        {req.remoteNote && <p className="text-xs text-zinc-400 italic">"{req.remoteNote}"</p>}
+                        {req.location && (
+                          <a href={`https://www.google.com/maps?q=${req.location.latitude},${req.location.longitude}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-500 hover:text-blue-400">
+                            <MapPin size={12} /> Konumu Haritada Gör
+                          </a>
+                        )}
+                        <div className="flex gap-2 pt-2">
+                          <button onClick={() => handleRequestAction('attendance', req.id!, 'approved')} className="flex-1 flex items-center justify-center gap-1 rounded-lg bg-emerald-600 py-2 text-xs font-bold text-white hover:bg-emerald-500"><Check size={14} /> Onayla</button>
+                          <button onClick={() => handleRequestAction('attendance', req.id!, 'rejected')} className="flex-1 flex items-center justify-center gap-1 rounded-lg bg-red-600 py-2 text-xs font-bold text-white hover:bg-red-500"><X size={14} /> Reddet</button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </section>
         )}
@@ -2981,14 +3735,111 @@ export default function App() {
             </div>
 
             <div className="rounded-3xl border border-zinc-900 bg-zinc-900/20 p-8 space-y-8">
-              <div className="flex flex-col items-center gap-4">
-                <div className="h-24 w-24 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500">
-                  <UserIcon size={48} />
+              {/* Profil Fotoğrafı */}
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative group">
+                  {profile?.avatarUrl ? (
+                    <img
+                      src={profile.avatarUrl}
+                      alt={profile.name}
+                      className="h-28 w-28 rounded-full object-cover border-4 border-orange-500/30 shadow-xl"
+                    />
+                  ) : (
+                    <div className="h-28 w-28 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 border-4 border-orange-500/20">
+                      <UserIcon size={52} />
+                    </div>
+                  )}
+                  {/* Upload overlay */}
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarUploading}
+                    className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    {avatarUploading ? (
+                      <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Camera size={24} className="text-white" />
+                    )}
+                  </button>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                   onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !user) return;
+                      if (file.size > 8 * 1024 * 1024) {
+                        setStatus({ type: 'error', message: 'Fotoğraf en fazla 8MB olabilir.' });
+                        return;
+                      }
+                      setAvatarUploading(true);
+                      try {
+                        // Canvas ile yeniden boyutlandır ve sıkıştır (Firebase Storage yerine)
+                        const avatarBase64 = await new Promise<string>((resolve, reject) => {
+                          const img = new Image();
+                          const objectUrl = URL.createObjectURL(file);
+                          img.onload = () => {
+                            const maxSize = 256;
+                            const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width * scale;
+                            canvas.height = img.height * scale;
+                            const ctx = canvas.getContext('2d')!;
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            URL.revokeObjectURL(objectUrl);
+                            resolve(canvas.toDataURL('image/jpeg', 0.8));
+                          };
+                          img.onerror = () => reject(new Error('Resim yüklenemedi.'));
+                          img.src = objectUrl;
+                        });
+                        await updateDoc(doc(db, 'users', user.uid), { avatarUrl: avatarBase64 });
+                        setProfile(prev => prev ? { ...prev, avatarUrl: avatarBase64 } : prev);
+                        setStatus({ type: 'success', message: 'Profil fotoğrafı güncellendi.' });
+                      } catch (err: any) {
+                        setStatus({ type: 'error', message: 'Fotoğraf yüklenemedi: ' + err.message });
+                      } finally {
+                        setAvatarUploading(false);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
                 </div>
+
                 <div className="text-center">
                   <h3 className="text-2xl font-bold">{profile?.name}</h3>
                   {profile?.title && <p className="text-orange-500 font-bold text-sm uppercase tracking-widest mt-1">{profile.title}</p>}
                   <p className="text-zinc-500 text-xs mt-1">{profile?.role === 'admin' ? 'Yönetici' : 'Personel'}</p>
+                </div>
+
+                {/* Fotoğraf aksiyonları */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarUploading}
+                    className="flex items-center gap-1.5 rounded-xl bg-orange-500/10 px-4 py-2 text-xs font-bold text-orange-500 hover:bg-orange-500/20 transition-colors disabled:opacity-50"
+                  >
+                    <Camera size={13} />
+                    {profile?.avatarUrl ? 'Değiştir' : 'Fotoğraf Ekle'}
+                  </button>
+                  {profile?.avatarUrl && (
+                    <button
+                      onClick={async () => {
+                        if (!user) return;
+                        if (!window.confirm('Profil fotoğrafı silinsin mi?')) return;
+                        try {
+                          await updateDoc(doc(db, 'users', user.uid), { avatarUrl: null });
+                          setProfile(prev => prev ? { ...prev, avatarUrl: undefined } : prev);
+                          setStatus({ type: 'success', message: 'Profil fotoğrafı silindi.' });
+                        } catch (err: any) {
+                          setStatus({ type: 'error', message: 'Silinemedi: ' + err.message });
+                        }
+                      }}
+                      className="flex items-center gap-1.5 rounded-xl bg-red-500/10 px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-500/20 transition-colors"
+                    >
+                      <Trash2 size={13} /> Sil
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -3055,6 +3906,104 @@ export default function App() {
                   >
                     <XCircle size={24} />
                   </button>
+                </div>
+
+                {/* Profil Fotoğrafı Yönetimi */}
+                <div className="flex items-center gap-5 p-4 rounded-2xl border border-zinc-800 bg-zinc-900/30">
+                  <div className="relative group shrink-0">
+                    {editingUser.avatarUrl ? (
+                      <img src={editingUser.avatarUrl} alt={editingUser.name} className="h-20 w-20 rounded-full object-cover border-4 border-orange-500/30" />
+                    ) : (
+                      <div className="h-20 w-20 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 text-2xl font-black border-4 border-orange-500/10">
+                        {editingUser.name[0]}
+                      </div>
+                    )}
+                    <label className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                      <Camera size={20} className="text-white" />
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setAvatarUploading(true);
+                          try {
+                            const avatarBase64 = await new Promise<string>((resolve, reject) => {
+                              const img = new Image();
+                              const objectUrl = URL.createObjectURL(file);
+                              img.onload = () => {
+                                const maxSize = 256;
+                                const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+                                const canvas = document.createElement('canvas');
+                                canvas.width = img.width * scale;
+                                canvas.height = img.height * scale;
+                                canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                URL.revokeObjectURL(objectUrl);
+                                resolve(canvas.toDataURL('image/jpeg', 0.8));
+                              };
+                              img.onerror = () => reject(new Error('Resim yüklenemedi.'));
+                              img.src = objectUrl;
+                            });
+                            await updateDoc(doc(db, 'users', editingUser.uid), { avatarUrl: avatarBase64 });
+                            setEditingUser(prev => prev ? { ...prev, avatarUrl: avatarBase64 } : prev);
+                            // Personele bildirim gönder
+                            await addDoc(collection(db, 'notifications'), {
+                              userId: editingUser.uid,
+                              title: 'Profil Fotoğrafınız Güncellendi',
+                              message: `${profile?.name || 'Yöneticiniz'} profil fotoğrafınızı güncelledi.`,
+                              type: 'info',
+                              read: false,
+                              link: '/profile',
+                              createdAt: new Date().toISOString(),
+                            });
+                            setStatus({ type: 'success', message: `${editingUser.name} için profil fotoğrafı güncellendi.` });
+                          } catch (err: any) {
+                            setStatus({ type: 'error', message: 'Fotoğraf yüklenemedi: ' + err.message });
+                          } finally {
+                            setAvatarUploading(false);
+                            e.target.value = '';
+                          }
+                        }}
+                      />
+                    </label>
+                    {avatarUploading && (
+                      <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
+                        <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm mb-1">Profil Fotoğrafı</p>
+                    <p className="text-[11px] text-zinc-500 mb-3">Resmin üzerine tıklayarak fotoğrafı değiştirebilirsiniz. Değişiklik personele bildirim olarak iletilir.</p>
+                    {editingUser.avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!window.confirm('Profil fotoğrafı silinsin mi?')) return;
+                          try {
+                            await updateDoc(doc(db, 'users', editingUser.uid), { avatarUrl: null });
+                            setEditingUser(prev => prev ? { ...prev, avatarUrl: undefined } : prev);
+                            await addDoc(collection(db, 'notifications'), {
+                              userId: editingUser.uid,
+                              title: 'Profil Fotoğrafınız Silindi',
+                              message: `${profile?.name || 'Yöneticiniz'} profil fotoğrafınızı kaldırdı.`,
+                              type: 'info',
+                              read: false,
+                              link: '/profile',
+                              createdAt: new Date().toISOString(),
+                            });
+                            setStatus({ type: 'success', message: 'Fotoğraf silindi.' });
+                          } catch (err: any) {
+                            setStatus({ type: 'error', message: 'Silinemedi: ' + err.message });
+                          }
+                        }}
+                        className="flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-1.5 text-[11px] font-bold text-red-500 hover:bg-red-500/20 transition-colors"
+                      >
+                        <Trash2 size={11} /> Fotoğrafı Kaldır
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <form onSubmit={handleUpdateUser} className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3152,7 +4101,6 @@ export default function App() {
                           onClick={() => {
                             const newUpdates = { ...editingUser, deviceId: '' };
                             setEditingUser(newUpdates);
-                            // Immediate server reset preferred for UX
                             fetch('/api/users/update', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -3179,6 +4127,26 @@ export default function App() {
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
+                  {/* Nakliye / Uzaktan giriş yetkisi */}
+                  <div className="md:col-span-2">
+                    <label className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 cursor-pointer hover:border-orange-500/50 transition-colors">
+                      <input 
+                        name="canRemoteCheckIn"
+                        type="checkbox"
+                        value="true"
+                        defaultChecked={editingUser.canRemoteCheckIn === true}
+                        className="h-4 w-4 accent-orange-500"
+                      />
+                      <div>
+                        <p className="text-sm font-semibold text-white flex items-center gap-2">
+                          <Truck size={14} className="text-orange-500" />
+                          Nakliye / Uzaktan Giriş Yetkisi
+                        </p>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis dışından (nakliyede) da giriş-çıkış yapabilir. Konumu kaydedilir, yöneticileri bildirim alır.</p>
+                      </div>
+                    </label>
+                  </div>
+
                   <div className="space-y-2">
                     <label className="text-xs font-semibold text-zinc-500 uppercase">Şifre Sıfırla (Yeni Şifre)</label>
                     <input 
@@ -3227,10 +4195,18 @@ export default function App() {
               className="relative w-full max-w-md overflow-hidden rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-2xl"
             >
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-xl font-bold flex items-center gap-2">
-                  <Clock4 size={24} className="text-orange-500" />
-                  {editingLog ? 'Kaydı Düzenle' : 'Manuel Kayıt Ekle'}
-                </h3>
+                <div>
+                  <h3 className="text-xl font-bold flex items-center gap-2">
+                    <Clock4 size={24} className="text-orange-500" />
+                    {editingLog ? 'Kaydı Düzenle' : 'Manuel Kayıt Ekle'}
+                  </h3>
+                  {/* Hedef kişi adını göster */}
+                  {(() => {
+                    const tid = selectedDayDetails?.userId || selectedPersonnelId || editingLog?.userId;
+                    const tName = tid ? (allUsers.find(u => u.uid === tid)?.name || (profile?.uid === tid ? profile?.name : null)) : null;
+                    return tName ? <p className="text-xs text-zinc-500 mt-0.5">Personel: <span className="text-orange-400 font-bold">{tName}</span></p> : null;
+                  })()}
+                </div>
                 <button onClick={() => setShowManualLogModal(false)} className="text-zinc-500 hover:text-white">
                   <X size={24} />
                 </button>
@@ -3422,7 +4398,6 @@ export default function App() {
                       if (!editingOvertime?.id) return;
                       await setDoc(doc(db, 'overtimeRequests', editingOvertime.id), {
                         deleted: true,
-                        _system_key: 'pdk_system_secret_2026'
                       }, { merge: true });
                       setEditingOvertime(null);
                       setStatus({ type: 'success', message: 'Mesai kaydı silindi.' });
@@ -3475,6 +4450,73 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Dashboard Stat Detail Modal */}
+      <AnimatePresence>
+        {dashboardStatModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDashboardStatModal(null)} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-sm rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl overflow-hidden"
+            >
+              {/* Header */}
+              <div className={cn(
+                "px-6 py-5 flex items-center justify-between",
+                dashboardStatModal.color === 'emerald' ? "bg-emerald-500/10 border-b border-emerald-500/20" :
+                dashboardStatModal.color === 'orange' ? "bg-orange-500/10 border-b border-orange-500/20" :
+                dashboardStatModal.color === 'red' ? "bg-red-500/10 border-b border-red-500/20" :
+                "bg-zinc-900/40 border-b border-zinc-800"
+              )}>
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "p-2 rounded-xl",
+                    dashboardStatModal.color === 'emerald' ? "bg-emerald-500/20 text-emerald-400" :
+                    dashboardStatModal.color === 'orange' ? "bg-orange-500/20 text-orange-400" :
+                    dashboardStatModal.color === 'red' ? "bg-red-500/20 text-red-400" :
+                    "bg-zinc-800 text-zinc-400"
+                  )}>
+                    {dashboardStatModal.icon}
+                  </div>
+                  <div>
+                    <p className="font-black text-white">{dashboardStatModal.title}</p>
+                    <p className="text-xs text-zinc-400">{dashboardStatModal.people.length} kişi · Bugün</p>
+                  </div>
+                </div>
+                <button onClick={() => setDashboardStatModal(null)} className="rounded-full bg-zinc-800/60 p-2 text-zinc-400 hover:bg-zinc-700">
+                  <X size={18} />
+                </button>
+              </div>
+              {/* List */}
+              <div className="max-h-[60vh] overflow-y-auto divide-y divide-zinc-900">
+                {dashboardStatModal.people.length === 0 ? (
+                  <div className="p-10 text-center text-zinc-500 text-sm">Bu kategoride kimse yok.</div>
+                ) : (
+                  dashboardStatModal.people.map(p => (
+                    <div key={p.uid} className="flex items-center gap-4 px-6 py-4 hover:bg-zinc-900/40 transition-colors">
+                      <div className={cn(
+                        "h-9 w-9 rounded-full flex items-center justify-center text-sm font-black shrink-0",
+                        dashboardStatModal.color === 'emerald' ? "bg-emerald-500/20 text-emerald-400" :
+                        dashboardStatModal.color === 'orange' ? "bg-orange-500/20 text-orange-400" :
+                        dashboardStatModal.color === 'red' ? "bg-red-500/20 text-red-400" :
+                        "bg-zinc-800 text-zinc-400"
+                      )}>
+                        {p.name[0]?.toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-white truncate">{p.name}</p>
+                        <p className="text-[11px] text-zinc-500 truncate">{p.detail}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Day Details Modal */}
       <AnimatePresence>
         {selectedDayDetails && (
@@ -3489,26 +4531,39 @@ export default function App() {
               <div className="mb-6 flex items-center justify-between sticky top-0 bg-zinc-950 py-2 z-10 border-b border-zinc-900">
                 <div>
                   <h3 className="text-xl font-bold">{format(new Date(selectedDayDetails.date), 'd MMMM yyyy', { locale: tr })}</h3>
-                  <p className="text-xs text-zinc-500">{allUsers.find(u => u.uid === selectedDayDetails.userId)?.name} Hareketleri</p>
+                  <p className="text-xs text-zinc-500">
+                    {(allUsers.find(u => u.uid === selectedDayDetails.userId)?.name 
+                      || (profile?.uid === selectedDayDetails.userId ? profile?.name : null)
+                      || 'Personel') + ' Hareketleri'}
+                  </p>
                 </div>
                 <button onClick={() => setSelectedDayDetails(null)} className="rounded-full bg-zinc-900 p-2 text-zinc-500 hover:bg-zinc-800"><X size={20} /></button>
               </div>
               
               <div className="space-y-6 pt-4">
-                {/* Manual Action Button */}
-                <button
-                  onClick={() => {
-                    setEditingLog(null);
-                    setManualLogDate(selectedDayDetails.date);
-                    setManualLogTime(format(new Date(), 'HH:mm'));
-                    setManualLogType('in');
-                    setShowManualLogModal(true);
-                  }}
-                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-500/10 py-4 text-emerald-500 font-bold hover:bg-emerald-500/20 transition-all border border-emerald-500/20 border-dashed"
-                >
-                  <Plus size={20} /> Manuel Hareket Ekle
-                </button>
-
+                {/* Manuel Hareket Ekle: admin veya bu günün sahibinin yöneticisi */}
+                {(() => {
+                  const dayUserId = selectedDayDetails.userId;
+                  const dayUser = allUsers.find(u => u.uid === dayUserId);
+                  const canAddManual = profile?.role === 'admin' ||
+                    dayUser?.managerId === profile?.uid ||
+                    (dayUserId === profile?.uid && profile?.canRemoteCheckIn);
+                  if (!canAddManual) return null;
+                  return (
+                    <button
+                      onClick={() => {
+                        setEditingLog(null);
+                        setManualLogDate(selectedDayDetails.date);
+                        setManualLogTime(format(new Date(), 'HH:mm'));
+                        setManualLogType('in');
+                        setShowManualLogModal(true);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-500/10 py-4 text-emerald-500 font-bold hover:bg-emerald-500/20 transition-all border border-emerald-500/20 border-dashed"
+                    >
+                      <Plus size={20} /> Manuel Hareket Ekle
+                    </button>
+                  );
+                })()}
                 {/* Logs Section */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-zinc-500 uppercase flex items-center gap-2">
@@ -3521,27 +4576,38 @@ export default function App() {
                       logs.filter(l => l.userId === selectedDayDetails.userId && !l.deleted && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM-dd') === selectedDayDetails.date)
                         .sort((a,b) => a.timestamp.toDate() - b.timestamp.toDate())
                         .map(log => (
-                        <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
+                        <div key={log.id} className={cn(
+                          "flex items-center justify-between p-3 rounded-xl border",
+                          log.status === 'pending' 
+                            ? "bg-amber-500/5 border-amber-500/20" 
+                            : "bg-zinc-900/40 border-zinc-800"
+                        )}>
                           <div className="flex items-center gap-3">
                             <div className={cn(
                               "p-2 rounded-lg", 
                               log.status === 'error' ? "bg-red-500/10 text-red-500" :
+                              log.status === 'pending' ? "bg-amber-500/10 text-amber-400" :
                               log.type === 'in' ? "bg-emerald-500/10 text-emerald-500" : "bg-orange-500/10 text-orange-500"
                             )}>
-                              {log.status === 'error' ? <ShieldAlert size={14} /> : log.type === 'in' ? <LogIn size={14} /> : <LogOut size={14} />}
+                              {log.status === 'error' ? <ShieldAlert size={14} /> : 
+                               log.status === 'pending' ? <Clock3 size={14} /> :
+                               log.type === 'in' ? <LogIn size={14} /> : <LogOut size={14} />}
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-bold truncate">
                                 {format(log.timestamp.toDate(), 'HH:mm')}
+                                {log.status === 'pending' && <span className="ml-2 text-[9px] text-amber-400 font-black uppercase">Onay Bekliyor</span>}
                                 {log.status === 'error' && <span className="ml-2 text-[9px] text-red-500 font-black uppercase">Hata</span>}
                               </p>
                               <p className="text-[10px] text-zinc-500 uppercase truncate">
-                                {log.status === 'error' ? log.errorMessage : (log.type === 'in' ? 'Giriş' : 'Çıkış')}
+                                {log.status === 'error' ? log.errorMessage : 
+                                 log.status === 'pending' ? 'Yönetici onayı bekleniyor' :
+                                 (log.type === 'in' ? 'Giriş' : 'Çıkış')}
                               </p>
                               <p className="text-[9px] text-zinc-600 font-mono truncate">{log.ipAddress}</p>
                             </div>
                           </div>
-                          {profile?.role === 'admin' && (
+                          {(profile?.role === 'admin' || allUsers.find(u => u.uid === log.userId)?.managerId === profile?.uid) && (
                             <div className="flex items-center gap-1">
                               <button onClick={() => {
                                 setEditingLog(log);
@@ -3619,7 +4685,6 @@ export default function App() {
                             onClick={async () => {
                               await setDoc(doc(db, 'overtimeRequests', deletingOvertime.id!), {
                                 deleted: true,
-                                _system_key: 'pdk_system_secret_2026'
                               }, { merge: true });
                               setDeletingOvertime(null);
                               setStatus({ type: 'success', message: 'Mesai kaydı silindi.' });
@@ -3667,14 +4732,12 @@ export default function App() {
                           </div>
                           
                           {req.attachmentUrl && (
-                            <a 
-                              href={req.attachmentUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
+                            <button 
+                              onClick={() => handleViewAttachment(req.attachmentUrl!)}
                               className="flex items-center gap-2 rounded-lg bg-zinc-950 p-2 text-[10px] font-bold text-emerald-400 hover:bg-zinc-900 transition-colors mt-2"
                             >
-                              <Download size={14} /> Rapor Dosyasını Görüntüle (PDF)
-                            </a>
+                              <Download size={14} /> Rapor Belgesini Görüntüle
+                            </button>
                           )}
                           <p className="text-[10px] text-zinc-500 italic">"{req.reason}"</p>
                         </div>
@@ -3799,7 +4862,6 @@ export default function App() {
                   try {
                     await setDoc(doc(db, 'overtimeRequests', deletingOvertime.id!), {
                       deleted: true,
-                      _system_key: 'pdk_system_secret_2026'
                     }, { merge: true });
                     setDeletingOvertime(null);
                     setStatus({ type: 'success', message: 'Mesai kaydı silindi' });
@@ -3897,115 +4959,254 @@ export default function App() {
             </div>
           )}
         </AnimatePresence>
-      </main>
 
-      {/* Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-900 bg-zinc-950/80 p-1 pb-safe backdrop-blur-md">
-        <div className="mx-auto max-w-4xl flex items-center justify-between px-2">
-          <button 
-            onClick={() => setActiveTab('home')}
-            className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-2 px-1 transition-colors min-w-0",
-              activeTab === 'home' ? "text-orange-500" : "text-zinc-500 hover:text-zinc-300"
-            )}
-          >
-            <Clock size={22} />
-            <span className="text-[10px] font-medium truncate w-full text-center">Ana Sayfa</span>
-          </button>
+      {/* Nakliye / Uzaktan Giriş Seçim Modal */}
+      <AnimatePresence>
+        {showRemoteModal && (
+          <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              transition={{ type: 'spring', damping: 20 }}
+              className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-950 overflow-hidden"
+            >
+              {/* Başlık */}
+              <div className="flex items-center gap-3 p-5 border-b border-zinc-800">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500 shrink-0">
+                  <Truck size={22} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-white">Giriş Yöntemi</h3>
+                  <p className="text-xs text-zinc-500">
+                    {pendingScanType === 'in' ? '🟢 Giriş' : '🔴 Çıkış'} işlemi — Bir yöntem seçin
+                  </p>
+                </div>
+                <button onClick={() => { setShowRemoteModal(false); setRemoteManualMode(false); setRemoteNote(''); setRemoteManualTime(''); }} className="text-zinc-500 hover:text-white p-1">
+                  <X size={20} />
+                </button>
+              </div>
 
-          <button 
-            onClick={() => setActiveTab('leaves')}
-            className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-2 px-1 transition-colors relative min-w-0",
-              activeTab === 'leaves' ? "text-orange-500" : "text-zinc-500 hover:text-zinc-300"
-            )}
-          >
-            <div className="relative">
-              <FileText size={22} />
-              {notifications.some(n => !n.read && n.title.includes('İzin')) && (
-                <span className="absolute -right-1 -top-1 flex h-2 w-2 items-center justify-center rounded-full bg-red-500 ring-1 ring-zinc-950" />
+              {!remoteManualMode ? (
+                /* === EKRAN 1: Yöntem Seçimi === */
+                <div className="p-5 space-y-3">
+                  {/* QR Seçeneği */}
+                  <button
+                    onClick={() => {
+                      if (pendingScanType) {
+                        setScanType(pendingScanType);
+                        setShowRemoteModal(false);
+                        setRemoteManualMode(false);
+                        setShowScanner(true);
+                      }
+                    }}
+                    className="w-full flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 hover:border-orange-500/50 hover:bg-zinc-900 transition-all text-left"
+                  >
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 shrink-0">
+                      <QrCode size={22} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-white text-sm">QR Kod ile Giriş</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">İş yerindeki QR kodu kameraya okutun</p>
+                    </div>
+                    <ChevronRight size={18} className="ml-auto text-zinc-600" />
+                  </button>
+
+                  {/* Manuel Seçeneği */}
+                  <button
+                    onClick={() => {
+                      setRemoteManualMode(true);
+                      setRemoteManualTime(format(new Date(), 'HH:mm'));
+                    }}
+                    className="w-full flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 hover:border-orange-500/50 hover:bg-zinc-900 transition-all text-left"
+                  >
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400 shrink-0">
+                      <Clock size={22} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-white text-sm">Manuel Giriş</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">Saati kendiniz girin (nakliye, saha çalışması)</p>
+                    </div>
+                    <ChevronRight size={18} className="ml-auto text-zinc-600" />
+                  </button>
+
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex items-start gap-2">
+                    <MapPin size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-400">Her iki yöntemde de konumunuz ve notunuz yöneticinize iletilir.</p>
+                  </div>
+                </div>
+              ) : (
+                /* === EKRAN 2: Manuel Giriş Formu === */
+                <div className="p-5 space-y-4">
+                  <button onClick={() => setRemoteManualMode(false)} className="flex items-center gap-1 text-xs text-zinc-500 hover:text-white transition">
+                    <ChevronLeft size={14} /> Geri dön
+                  </button>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-zinc-400 uppercase">{pendingScanType === 'in' ? 'Giriş Saati' : 'Çıkış Saati'}</label>
+                    <input
+                      type="time"
+                      value={remoteManualTime}
+                      onChange={(e) => setRemoteManualTime(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-2xl font-bold text-center focus:border-orange-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-zinc-400 uppercase">Açıklama / Konum Notu</label>
+                    <textarea
+                      value={remoteNote}
+                      onChange={(e) => setRemoteNote(e.target.value)}
+                      placeholder="Örn: Ankara mal teslimi, şantiye çalışması..."
+                      rows={3}
+                      className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none resize-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => { setShowRemoteModal(false); setRemoteManualMode(false); setRemoteNote(''); }}
+                      className="rounded-xl border border-zinc-700 py-3 text-sm font-bold text-zinc-400 hover:bg-zinc-800 transition"
+                    >
+                      İptal
+                    </button>
+                    <button
+                      disabled={remoteSubmitting || !remoteManualTime}
+                      onClick={async () => {
+                        if (!user || !profile || !pendingScanType || !remoteManualTime) return;
+                        setRemoteSubmitting(true);
+                        try {
+                          // Saat bilgisini bugüne uygula
+                          const [h, m] = remoteManualTime.split(':').map(Number);
+                          const clientNow = new Date();
+                          clientNow.setHours(h, m, 0, 0);
+
+                          // GPS konum al
+                          let location = undefined;
+                          try {
+                            const pos = await new Promise<GeolocationPosition>((res, rej) => {
+                              navigator.geolocation.getCurrentPosition(res, rej, { timeout: 4000 });
+                            });
+                            location = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+                          } catch {}
+
+                          const logPayload = {
+                            userId: user.uid,
+                            userName: profile.name,
+                            type: pendingScanType,
+                            ipAddress: currentIp || 'Manuel',
+                            location: location || null,
+                            status: 'pending' as const,
+                            isRemote: true,
+                            remoteNote: remoteNote || '',
+                            manualEntry: true,
+                          };
+
+                          const newDocRef = await addDoc(collection(db, 'attendance'), {
+                            ...logPayload,
+                            timestamp: clientNow, // Kullanıcının girdiği saat
+                          });
+
+                          // Optimistik UI
+                          const optimisticLog: AttendanceLog = {
+                            id: newDocRef.id,
+                            ...logPayload,
+                            timestamp: { toDate: () => clientNow } as any,
+                          };
+                          setLogs(prev => [optimisticLog, ...prev.filter(l => l.id !== newDocRef.id)]);
+
+                          // Bildirim gönder
+                          fetch('/api/notify/checkin', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userId: user.uid, userName: profile.name, type: pendingScanType, isRemote: true, remoteNote: remoteNote || '' })
+                          }).catch(() => {});
+
+                          setStatus({ type: 'success', message: `🚛 Manuel ${pendingScanType === 'in' ? 'giriş' : 'çıkış'} talebi alındı. Yönetici onayından sonra kesinleşecek.` });
+                          setShowRemoteModal(false);
+                          setRemoteManualMode(false);
+                          setRemoteNote('');
+                          setRemoteManualTime('');
+                        } catch (err) {
+                          setStatus({ type: 'error', message: 'Manuel kayıt sırasında hata oluştu.' });
+                        } finally {
+                          setRemoteSubmitting(false);
+                        }
+                      }}
+                      className="rounded-xl bg-orange-500 py-3 text-sm font-bold text-white hover:bg-orange-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {remoteSubmitting ? <Clock size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+                      {remoteSubmitting ? 'Kaydediliyor...' : 'Kaydet'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Belge Görüntüleyici Modal */}
+      {/* Belge Görüntüleyici Modal */}
+      {viewingAttachment && (
+        <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl bg-zinc-900 rounded-2xl overflow-hidden flex flex-col border border-zinc-800 h-[80vh] shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-950">
+              <h3 className="font-bold text-white flex items-center gap-2">
+                <FileText size={18} className="text-emerald-500"/> Belge Görüntüleyici
+              </h3>
+              <button onClick={() => setViewingAttachment(null)} className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 bg-black/80 p-2 sm:p-4 flex items-center justify-center overflow-auto relative">
+              {viewingAttachment.startsWith('data:image') ? (
+                <img src={viewingAttachment} alt="Rapor Belgesi" className="max-w-full max-h-full object-contain rounded-lg" />
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-4 text-center max-w-md mx-auto p-4">
+                  <div className="w-24 h-24 rounded-full bg-red-500/10 flex items-center justify-center mb-2">
+                    <FileText size={48} className="text-red-500" />
+                  </div>
+                  <h4 className="text-xl font-bold text-white">PDF Belgesi</h4>
+                  <p className="text-sm text-zinc-400">
+                    Mobil cihazlarda (özellikle iOS) yerleşik PDF görüntüleyiciler tam uyumlu çalışmayabilir. Belgeyi eksiksiz görüntülemek için lütfen cihazınıza indirin veya açın.
+                  </p>
+                  <button 
+                    onClick={handleDownloadAndOpen}
+                    className="mt-4 flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-colors shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+                  >
+                    <Download size={18} /> Belgeyi Aç / İndir
+                  </button>
+                </div>
               )}
             </div>
-            <span className="text-[10px] font-medium truncate w-full text-center">İzinler</span>
-          </button>
-
-          {(profile?.role === 'admin' || allUsers.some(u => u.managerId === user?.uid)) && (
-            <>
-              <button 
-                onClick={() => setActiveTab('approvals')}
-                className={cn(
-                  "flex flex-1 flex-col items-center gap-1 py-2 px-1 transition-colors relative min-w-0",
-                  activeTab === 'approvals' ? "text-orange-500" : "text-zinc-500 hover:text-zinc-300"
-                )}
-              >
-                <div className="relative">
-                  <CheckCircle2 size={22} />
-                  {(() => {
-                    const pendingCount = leaveRequests.filter(r => r.status === 'pending' && r.managerId === user?.uid).length + 
-                                       overtimeRequests.filter(r => r.status === 'pending' && r.managerId === user?.uid).length;
-                    return pendingCount > 0 && (
-                      <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white animate-pulse ring-1 ring-zinc-950">
-                        {pendingCount}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <span className="text-[10px] font-medium truncate w-full text-center">Onaylar</span>
-              </button>
-            </>
-          )}
-
-          {profile?.role === 'admin' && (
-            <button 
-              onClick={() => setActiveTab('users')}
-              className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-2 px-1 transition-colors min-w-0",
-                activeTab === 'users' ? "text-orange-500" : "text-zinc-500 hover:text-zinc-300"
-              )}
-            >
-              <Users size={22} />
-              <span className="text-[10px] font-medium truncate w-full text-center">Personel</span>
-            </button>
-          )}
-          
-          {profile?.role === 'admin' && (
-            <button 
-              onClick={() => setActiveTab('qr')}
-              className={cn(
-                "hidden sm:flex flex-1 flex-col items-center gap-1 py-2 px-1 transition-colors min-w-0 focus:outline-none",
-                activeTab === 'qr' ? "text-orange-500" : "text-zinc-500 hover:text-zinc-300"
-              )}
-            >
-              <QrCode size={22} />
-              <span className="text-[10px] font-medium truncate w-full text-center">Ayarlar</span>
-            </button>
-          )}
-
-          {profile?.role === 'admin' && (
-            <button 
-              onClick={() => setActiveTab('movements')}
-              className={cn(
-                "md:flex hidden flex-1 flex-col items-center gap-1 py-2 px-1 transition-colors min-w-0 focus:outline-none",
-                activeTab === 'movements' ? "text-orange-500" : "text-zinc-500 hover:text-zinc-300"
-              )}
-            >
-              <Calendar size={22} />
-              <span className="text-[10px] font-medium truncate w-full text-center">Hareketler</span>
-            </button>
-          )}
-
-          <button 
-            onClick={() => setActiveTab('profile')}
-            className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-2 px-1 transition-colors min-w-0",
-              activeTab === 'profile' ? "text-orange-500" : "text-zinc-500 hover:text-zinc-300"
+            {viewingAttachment.startsWith('data:image') && (
+              <div className="p-4 bg-zinc-950 border-t border-zinc-800 flex justify-end gap-3">
+                <button onClick={handleDownloadAndOpen} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm transition-colors shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                  <Download size={16} /> Cihaza İndir
+                </button>
+              </div>
             )}
-          >
-            <UserIcon size={22} />
-            <span className="text-[10px] font-medium truncate w-full text-center">Profil</span>
-          </button>
+          </div>
         </div>
-      </nav>
+      )}
+
+      </main>
+
+
+
+      {/* Bottom Nav */}
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        profile={profile}
+        user={user}
+        allUsers={allUsers}
+        leaveRequests={leaveRequests}
+        overtimeRequests={overtimeRequests}
+        notifications={notifications}
+        logs={logs}
+      />
     </div>
   );
 }

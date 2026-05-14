@@ -1,0 +1,9 @@
+node_modules
+dist
+dev-dist
+PDKS-Deneme-main
+.git
+.gitignore
+*.md
+.env.example
+.gemini
