@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1886,6 +1886,84 @@ export default function App() {
     }
   };
 
+  // Hareketleri .ics takvim dosyasına aktarma
+  const exportToCalendar = (userId: string, month: string) => {
+    const [year, m] = month.split('-').map(Number);
+    const userLogs = logs
+      .filter(l => l.userId === userId && !l.deleted && l.status !== 'error')
+      .filter(l => {
+        const d = l.timestamp?.toDate?.() || new Date();
+        return d.getMonth() + 1 === m && d.getFullYear() === year;
+      })
+      .sort((a, b) => {
+        const aT = a.timestamp?.toDate?.()?.getTime?.() || 0;
+        const bT = b.timestamp?.toDate?.()?.getTime?.() || 0;
+        return aT - bT;
+      });
+
+    if (userLogs.length === 0) {
+      setStatus({ type: 'error', message: 'Bu ay için hareket kaydı bulunamadı.' });
+      return;
+    }
+
+    const events: string[] = [];
+    const dateMap = new Map<string, typeof userLogs>();
+    
+    userLogs.forEach(log => {
+      const d = log.timestamp?.toDate?.() || new Date();
+      const dateKey = format(d, 'yyyy-MM-dd');
+      if (!dateMap.has(dateKey)) dateMap.set(dateKey, []);
+      dateMap.get(dateKey)!.push(log);
+    });
+
+    const formatICSDate = (d: Date) => {
+      return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    };
+
+    dateMap.forEach((dayLogs, dateKey) => {
+      const inLog = dayLogs.find(l => l.type === 'in');
+      const outLog = dayLogs.find(l => l.type === 'out');
+      
+      if (inLog) {
+        const inTime = inLog.timestamp?.toDate?.() || new Date();
+        const outTime = outLog?.timestamp?.toDate?.() || new Date(inTime.getTime() + 8 * 60 * 60 * 1000);
+        const userName = inLog.userName || 'Personel';
+        
+        events.push(
+          'BEGIN:VEVENT',
+          `DTSTART:${formatICSDate(inTime)}`,
+          `DTEND:${formatICSDate(outTime)}`,
+          `SUMMARY:${userName} - İş Günü`,
+          `DESCRIPTION:Giriş: ${format(inTime, 'HH:mm')}${outLog ? ' / Çıkış: ' + format(outTime, 'HH:mm') : ' (Çıkış yok)'}`,
+          `UID:pdks-${dateKey}-${inLog.userId}@pdks`,
+          'END:VEVENT'
+        );
+      }
+    });
+
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//PDKS//Devam Kontrol//TR',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      `X-WR-CALNAME:PDKS Hareketler ${month}`,
+      ...events,
+      'END:VCALENDAR'
+    ].join('\r\n');
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pdks-hareketler-${month}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setStatus({ type: 'success', message: 'Takvim dosyası indirildi. Telefonunuzda açarak takviminize ekleyebilirsiniz.' });
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-950">
@@ -2323,9 +2401,15 @@ export default function App() {
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => exportToExcel(user!.uid, selectedMonth)}
-                      className="flex-1 sm:flex-none rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 sm:flex-none rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-500 transition-colors flex items-center justify-center gap-1.5"
                     >
-                      <Download size={14} /> Excel İndir
+                      <Download size={13} /> Excel
+                    </button>
+                    <button 
+                      onClick={() => exportToCalendar(user!.uid, selectedMonth)}
+                      className="flex-1 sm:flex-none rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-500 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <Calendar size={13} /> Takvime Ekle
                     </button>
                     <input
                       type="month"

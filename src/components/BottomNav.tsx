@@ -69,7 +69,7 @@ export default function BottomNav({
               <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500 ring-2 ring-zinc-900" />
             )}
           </div>
-          <span className="text-[9px] font-bold truncate w-full text-center">İzinler</span>
+          <span className="text-[9px] font-bold truncate w-full text-center">Talepler</span>
         </motion.button>
 
         {(profile?.role === 'admin' || allUsers.some(u => u.managerId === user?.uid)) && (
