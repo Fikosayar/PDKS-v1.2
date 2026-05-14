@@ -47,8 +47,8 @@ COPY --from=builder /app/firestore.rules ./
 
 EXPOSE 8104
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+# Health check (daha toleranslı — sunucu başlangıcı için yeterli süre)
+HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=5 \
   CMD wget -qO- http://localhost:8104/api/health || exit 1
 
 # Sunucuyu başlat

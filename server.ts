@@ -516,6 +516,11 @@ async function startServer() {
     }
   });
 
+  // Health check endpoint (Coolify / load balancer için)
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
   // Middleware'leri ÖNCE ekle, sonra listen et
   if (process.env.NODE_ENV !== 'production') {
     try {
@@ -535,7 +540,12 @@ async function startServer() {
     });
   }
 
-  // Admin bootstrap: sadece yoksa oluştur, varsa dokunma
+  // ÖNCE sunucuyu başlat (healthcheck geçsin)
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+
+  // SONRA admin bootstrap (non-blocking, sunucu zaten dinliyor)
   if (db) {
     try {
       const adminId = 'admin_initial';
@@ -563,11 +573,7 @@ async function startServer() {
       console.error("Bootstrap error:", e);
     }
   }
-
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`Mobile testing: http://<YOUR_LOCAL_IP>:${PORT}`);
-  });
 }
 
 startServer();
+
