@@ -3,17 +3,17 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Build sırasında NODE_ENV=development olmalı (devDependencies gerekli)
+ENV NODE_ENV=development
+
 # Paket dosyalarını kopyala
 COPY package.json package-lock.json* ./
 
-# Tüm bağımlılıkları yükle (build için gerekli)
-RUN npm install
+# TÜM bağımlılıkları yükle (devDependencies dahil - vite, tailwind, vite-plugin-pwa vs.)
+RUN npm install --include=dev
 
 # Kaynak kodları kopyala
 COPY . .
-
-# .env dosyasını kontrol et (build sırasında VITE_ değişkenleri gerekli)
-# Coolify'da environment variables olarak da ayarlanabilir
 
 # Vite önyüzünü derle
 RUN npm run build
@@ -27,6 +27,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # Sadece prodüksiyon bağımlılıklarını yükle
+ENV NODE_ENV=production
 RUN npm install --omit=dev
 
 # tsx gerekli (server.ts çalıştırmak için)
@@ -44,12 +45,11 @@ COPY --from=builder /app/public ./public
 # Firestore kurallarını kopyala (referans için)
 COPY --from=builder /app/firestore.rules ./
 
-ENV NODE_ENV=production
-EXPOSE 3000
+EXPOSE 8104
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD wget -qO- http://localhost:3000/api/health || exit 1
+  CMD wget -qO- http://localhost:8104/api/health || exit 1
 
 # Sunucuyu başlat
 CMD ["tsx", "server.ts"]
