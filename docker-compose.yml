@@ -9,6 +9,7 @@ services:
     environment:
       - PORT=8104
       - NODE_ENV=production
+      # Firebase (Geçiş sürecinde lazım olabilir, sonra kaldıracağız)
       - VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}
       - VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}
       - VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}
@@ -17,6 +18,27 @@ services:
       - VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
       - VITE_FIREBASE_MEASUREMENT_ID=${VITE_FIREBASE_MEASUREMENT_ID}
       - VITE_FIREBASE_DATABASE_ID=${VITE_FIREBASE_DATABASE_ID}
+      # Yeni Sistem Ayarları
       - PDKS_SYSTEM_KEY=${PDKS_SYSTEM_KEY}
       - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      # Veritabanı Bağlantısı (db servisine bağlanacak)
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@pdks-db:5432/${POSTGRES_DB}
+    depends_on:
+      - pdks-db
     restart: unless-stopped
+
+  pdks-db:
+    image: postgres:16-alpine
+    container_name: pdks_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pdks_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pdks_secure_password_123}
+      POSTGRES_DB: ${POSTGRES_DB:-pdks_saas}
+    ports:
+      - '5432:5432'
+    volumes:
+      - pdks_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pdks_pgdata:

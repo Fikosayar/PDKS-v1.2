@@ -4,12 +4,6 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  doc, getDoc, setDoc, collection, addDoc, query, where, orderBy, 
-  onSnapshot, serverTimestamp, limit, or, updateDoc 
-} from 'firebase/firestore';
-import { signInWithCustomToken, signOut } from 'firebase/auth';
-import { auth, db } from '../lib/firebase';
 import { UserProfile, AttendanceLog, GlobalSettings, LeaveRequest, OvertimeRequest, SystemNotification, OfflineQueueItem } from '../types';
 import { subscribeToPush, requestNotificationPermission } from '../lib/pushNotifications';
 import { addToOfflineQueue, getOfflineQueue, removeFromOfflineQueue } from '../lib/offlineQueue';
