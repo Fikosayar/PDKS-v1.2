@@ -133,7 +133,7 @@ export default function App() {
   const [scanType, setScanType] = useState<'in' | 'out' | null>(null);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   
-  // Status mesajlar� otomatik kaybolsun
+  // Status mesajlar otomatik kaybolsun
   useEffect(() => {
     if (!status) return;
     const timeout = status.type === 'success' ? 4000 : 6000;
@@ -174,7 +174,7 @@ export default function App() {
   useEffect(() => {
     applyTheme(theme);
     setStoredTheme(theme);
-    // Sistem temas� de�i�ince g�ncelle
+    // Sistem temas deiince gncelle
     if (theme === 'system') {
       return listenSystemTheme(() => applyTheme('system'));
     }
@@ -184,11 +184,11 @@ export default function App() {
     setTheme(prev => prev === 'dark' ? 'light' : prev === 'light' ? 'system' : 'dark');
   };
 
-  // �evrimd��� mod
+  // evrimd mod
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [offlineQueueCount, setOfflineQueueCount] = useState(0);
 
-  // Nakliye (uzaktan giri�) modu
+  // Nakliye (uzaktan giri) modu
   const [showRemoteModal, setShowRemoteModal] = useState(false);
   const [remoteNote, setRemoteNote] = useState('');
   const [pendingScanType, setPendingScanType] = useState<'in' | 'out' | null>(null);
@@ -232,27 +232,27 @@ export default function App() {
   };
 
   const getOrCreateDeviceId = () => {
-    // 1. �nce LocalStorage'a bak
+    // 1. nce LocalStorage'a bak
     let devId = localStorage.getItem('pdks_device_id');
     
-    // 2. Yoksa �erezlere (Cookie) bak (Safari bazen localStorage siler ama �erezi tutar)
+    // 2. Yoksa erezlere (Cookie) bak (Safari bazen localStorage siler ama erezi tutar)
     if (!devId) {
       const match = document.cookie.match(new RegExp('(^| )pdks_device_id=([^;]+)'));
       if (match) devId = match[2];
     }
     
-    // 3. �kisinde de yoksa s�f�rdan olu�tur
+    // 3. kisinde de yoksa sfrdan olutur
     if (!devId) {
       devId = 'dev-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     }
     
-    // Her ihtimale kar�� ikisine birden tekrar g��l�ce kaydet
+    // Her ihtimale kar ikisine birden tekrar glce kaydet
     try {
       localStorage.setItem('pdks_device_id', devId);
-      // �erezi 10 y�l ge�erli olacak �ekilde ayarla
+      // erezi 10 yl geerli olacak ekilde ayarla
       document.cookie = `pdks_device_id=${devId}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/`;
     } catch (e) {
-      console.warn("Taray�c� veri kaydetmeyi engelliyor.");
+      console.warn("Tarayc veri kaydetmeyi engelliyor.");
     }
     
     return devId;
@@ -306,10 +306,10 @@ export default function App() {
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     const shiftStart = settings?.shiftStart || '08:00';
 
-    // Sadece aktif personel (silinmemi�)
+    // Sadece aktif personel (silinmemi)
     const activeUsers = allUsers.filter(u => u.role !== 'deleted');
 
-    // Bug�n�n onayl� loglar� (pending dahil de�il)
+    // Bugnn onayl loglar (pending dahil deil)
     const todayLogs = logs.filter(l =>
       !l.deleted &&
       l.status !== 'pending' &&
@@ -318,9 +318,9 @@ export default function App() {
       format(l.timestamp.toDate(), 'yyyy-MM-dd') === todayStr
     );
 
-    // Her personel i�in bug�nk� en son durumu belirle (son log out mu in mi?)
+    // Her personel iin bugnk en son durumu belirle (son log out mu in mi?)
     const userLastAction = new Map<string, string>(); // userId -> 'in' | 'out'
-    const userFirstIn = new Map<string, string>();     // userId -> 'HH:mm' (ilk giri� saati)
+    const userFirstIn = new Map<string, string>();     // userId -> 'HH:mm' (ilk giri saati)
 
     todayLogs
       .sort((a, b) => (a.timestamp.toDate().getTime()) - (b.timestamp.toDate().getTime()))
@@ -331,13 +331,13 @@ export default function App() {
         }
       });
 
-    // �u an ofiste: son hareketi 'in' olanlar
+    // u an ofiste: son hareketi 'in' olanlar
     const presentIds = new Set<string>();
     userLastAction.forEach((type, uid) => {
       if (type === 'in') presentIds.add(uid);
     });
 
-    // �zinli bug�n
+    // Izinli bugn
     const onLeaveIds = new Set<string>(
       leaveRequests.filter(r =>
         r.status === 'approved' && !r.deleted &&
@@ -345,13 +345,13 @@ export default function App() {
       ).map(r => r.userId)
     );
 
-    // Ge� kalanlar: ilk giri� saati mesai ba��ndan sonra olan ki�iler (ki�i ba�� 1 kez)
+    // Ge kalanlar: ilk giri saati mesai bandan sonra olan kiiler (kii ba 1 kez)
     let lateCount = 0;
     userFirstIn.forEach((time) => {
       if (time > shiftStart) lateCount++;
     });
 
-    // Gelmeyen listesi: aktif, izinli de�il, bug�n hi� giri� yapmam��
+    // Gelmeyen listesi: aktif, izinli deil, bugn hi giri yapmam
     const lateIds = new Set<string>();
     userFirstIn.forEach((time, uid) => { if (time > shiftStart) lateIds.add(uid); });
     const absentUserIds = new Set<string>();
@@ -359,19 +359,19 @@ export default function App() {
       if (!presentIds.has(u.uid) && !onLeaveIds.has(u.uid)) absentUserIds.add(u.uid);
     });
 
-    // Ki�i listelerini de d�nd�r
+    // Kii listelerini de dndr
     const userMap = new Map<string, UserProfile>(activeUsers.map(u => [u.uid, u]));
     const presentList = [...presentIds].map(uid => {
       const u = userMap.get(uid);
-      return { uid, name: u?.name || uid, detail: `Giri�: ${userFirstIn.get(uid) || '-'}` };
+      return { uid, name: u?.name || uid, detail: `Giris: ${userFirstIn.get(uid) || '-'}` };
     });
     const onLeaveList = [...onLeaveIds].map(uid => {
       const u = userMap.get(uid);
-      return { uid, name: u?.name || uid, detail: u?.title || '�zinli' };
+      return { uid, name: u?.name || uid, detail: u?.title || 'Izinli' };
     });
     const lateList = [...lateIds].map(uid => {
       const u = userMap.get(uid);
-      return { uid, name: u?.name || uid, detail: `Giri�: ${userFirstIn.get(uid) || '-'}` };
+      return { uid, name: u?.name || uid, detail: `Giris: ${userFirstIn.get(uid) || '-'}` };
     });
     const absentList = [...absentUserIds].map(uid => {
       const u = userMap.get(uid);
@@ -398,7 +398,7 @@ export default function App() {
     
     const userLogs = logs.filter(l => l.userId === user.uid && !l.deleted && l.type === 'in');
     
-    // Her g�n�n sadece ilk giri�ini kontrol et
+    // Her gnn sadece ilk giriini kontrol et
     const firstInsPerDay = new Map<string, string>(); // date -> time
     userLogs.forEach(l => {
       const dateStr = format(l.timestamp?.toDate() || new Date(), 'yyyy-MM-dd');
@@ -446,9 +446,9 @@ export default function App() {
           const dateStr = current.toISOString().slice(0, 10);
           // Pazar her zaman tatil
           const isSunday = dayOfWeek === 0;
-          // 5 g�nl�k �al��ma d�zeninde Cumartesi de tatil
+          // 5 gnlk Calisma dzeninde Cumartesi de tatil
           const isSaturday = dayOfWeek === 6 && workDays === 5;
-          // Resmi tatil kontrol�
+          // Resmi tatil kontrol
           const isPublicHoliday = !!getHoliday(dateStr);
           
           if (!isSunday && !isSaturday && !isPublicHoliday) {
@@ -517,10 +517,10 @@ export default function App() {
 
   // Settings listener
   // [Migrated to React Query] Firebase listener removed
-   // Logs listener � Admin: t�m veriler | Personel/Manager: kendi verisi
+   // Logs listener  Admin: tm veriler | Personel/Manager: kendi verisi
   // [Migrated to React Query] Firebase listener removed
 
-  // Ekip logs listener � Sadece y�neticiler i�in (alt�ndaki personelin hareketleri)
+  // Ekip logs listener  Sadece yoneticiler iin (altndaki personelin hareketleri)
   // [Migrated to React Query] Firebase listener removed
 
   // Users listener (Admin and Managers)
@@ -530,11 +530,11 @@ export default function App() {
   // Notifications listener
   // [Migrated to React Query] Firebase listener removed
 
-  // �nternet ba�lant� takibi
+  // nternet balant takibi
   useEffect(() => {
     const handleOnline = async () => {
       setIsOnline(true);
-      // �nternet gelince �evrimd��� kuyru�u senkronize et
+      // nternet gelince evrimd kuyruu senkronize et
       await syncOfflineQueueToFirebase();
     };
     const handleOffline = () => setIsOnline(false);
@@ -546,7 +546,7 @@ export default function App() {
     };
   }, [user, profile]);
 
-  // SW mesajlar�n� dinle (bildirim t�klamas� y�nlendirmesi)
+  // SW mesajlarn dinle (bildirim tklamas ynlendirmesi)
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
     const handler = (event: MessageEvent) => {
@@ -561,7 +561,7 @@ export default function App() {
     return () => navigator.serviceWorker.removeEventListener('message', handler);
   }, [user, profile]);
 
-  // Kullan�c� giri� yapt�ktan sonra push aboneli�i kur
+  // Kullanc giri yaptktan sonra push abonelii kur
   useEffect(() => {
     if (!user) return;
     const setupPush = async () => {
@@ -570,7 +570,7 @@ export default function App() {
         const sub = await subscribeToPush();
         if (sub) {
           setPushEnabled(true);
-          // Aboneli�i sunucuya kaydet
+          // Abonelii sunucuya kaydet
           await fetch('/api/push/subscribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -582,7 +582,7 @@ export default function App() {
     setupPush();
   }, [user]);
 
-  // �evrimd��� kuyruk say�s�n� g�ncelle
+  // evrimd kuyruk saysn gncelle
   useEffect(() => {
     getOfflineQueue().then(q => setOfflineQueueCount(q.length));
   }, [user]);
@@ -596,7 +596,7 @@ export default function App() {
       console.error("Mark read error:", e);
     }
   };
-  // �evrimd��� kuyru�u Firebase'e senkronize et
+  // evrimd kuyruu Firebase'e senkronize et
   const syncOfflineQueueToFirebase = useCallback(async () => {
     if (!user || !profile) return;
     const queue = await getOfflineQueue();
@@ -615,12 +615,12 @@ export default function App() {
         await removeFromOfflineQueue(item.id);
         syncedCount++;
       } catch (err) {
-        console.error('�evrimd��� kay�t senkronize edilemedi:', err);
+        console.error('evrimd kayt senkronize edilemedi:', err);
       }
     }
     if (syncedCount > 0) {
       setOfflineQueueCount(0);
-      setStatus({ type: 'success', message: `${syncedCount} �evrimd��� hareket ba�ar�yla senkronize edildi!` });
+      setStatus({ type: 'success', message: `${syncedCount} evrimd hareket baaryla senkronize edildi!` });
     }
   }, [user, profile]);
 
@@ -628,7 +628,7 @@ export default function App() {
 
   // [Migrated to React Query] Firebase listener removed
 
-  // Overtime Requests listener � or() yerine ayr� query'ler (index gerektirmez)
+  // Overtime Requests listener  or() yerine ayr query'ler (index gerektirmez)
   // [Migrated to React Query] Firebase listener removed
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -657,7 +657,7 @@ export default function App() {
       } else {
         const text = await response.text();
         console.error("Non-JSON response received:", text);
-        throw new Error("Sunucudan ge�ersiz yan�t al�nd�. L�tfen tekrar deneyin.");
+        throw new Error("Sunucudan geersiz yant alnd. Ltfen tekrar deneyin.");
       }
 
       if (response.ok && data.success !== false) {
@@ -677,14 +677,14 @@ export default function App() {
                 <ShieldAlert size={16} /> {data.error}
               </p>
               <div className="space-y-1">
-                <p className="text-[10px] text-zinc-500 uppercase font-bold">Mevcut Cihaz�n�z:</p>
+                <p className="text-[10px] text-zinc-500 uppercase font-bold">Mevcut Cihaznz:</p>
                 <div className="relative">
                   <p className="text-[11px] text-zinc-300 bg-zinc-900 p-2 rounded border border-zinc-800 break-all font-mono pr-8">{data.currentDevice}</p>
                   <button 
                     type="button"
                     onClick={() => {
                       navigator.clipboard.writeText(data.currentDevice);
-                      setStatus({ type: 'success', message: 'Cihaz bilgisi kopyaland�.' });
+                      setStatus({ type: 'success', message: 'Cihaz bilgisi kopyaland.' });
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
                     title="Kopyala"
@@ -695,17 +695,17 @@ export default function App() {
               </div>
               {data.allowedDevice && (
                 <div className="space-y-1">
-                  <p className="text-[10px] text-zinc-500 uppercase font-bold">Kay�tl� Olmas� Gereken:</p>
+                  <p className="text-[10px] text-zinc-500 uppercase font-bold">Kaytl Olmas Gereken:</p>
                   <p className="text-[11px] text-orange-500 bg-orange-500/5 p-2 rounded border border-orange-500/20 font-mono">{data.allowedDevice}</p>
                 </div>
               )}
               <p className="text-[10px] text-zinc-500 italic">
-                L�tfen y�neticinizden cihaz bilginizi g�ncellemesini isteyin.
+                Ltfen yoneticinizden cihaz bilginizi gncellemesini isteyin.
               </p>
             </div>
           );
         } else {
-          setLoginError(data.error || 'Giri� ba�ar�s�z.');
+          setLoginError(data.error || 'Giris baarsz.');
         }
       }
     } catch (error: any) {
@@ -714,8 +714,8 @@ export default function App() {
         <div className="flex flex-col items-center gap-2 justify-center text-center p-2">
           <AlertCircle size={20} className="text-red-500" />
           <div className="space-y-1">
-            <p className="font-bold">Giri� Hatas�</p>
-            <p className="text-[10px] opacity-80">{error?.message || 'Sistem hatas�. L�tfen internet ba�lant�n�z� kontrol edin.'}</p>
+            <p className="font-bold">Giris Hatas</p>
+            <p className="text-[10px] opacity-80">{error?.message || 'Sistem hatas. Ltfen internet balantnz kontrol edin.'}</p>
           </div>
         </div>
       );
@@ -759,20 +759,20 @@ export default function App() {
       const data = await response.json();
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Yeni personel ba�ar�yla eklendi.' });
+        setStatus({ type: 'success', message: 'Yeni personel baaryla eklendi.' });
         (e.target as HTMLFormElement).reset();
       } else {
-        setStatus({ type: 'error', message: data.error || 'Personel eklenirken hata olu�tu.' });
+        setStatus({ type: 'error', message: data.error || 'Personel eklenirken hata olutu.' });
       }
     } catch (error) {
-      setStatus({ type: 'error', message: 'Sistem hatas�.' });
+      setStatus({ type: 'error', message: 'Sistem hatas.' });
     }
   };
 
   const handlePrintQR = () => {
     const qrElement = document.getElementById('qr-code-svg');
     if (!qrElement) {
-      setStatus({ type: 'error', message: 'QR kod bulunamad�.' });
+      setStatus({ type: 'error', message: 'QR kod bulunamad.' });
       return;
     }
 
@@ -783,7 +783,7 @@ export default function App() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>PDKS QR Kod Yazd�r</title>
+          <title>PDKS QR Kod Yazdr</title>
           <style>
             body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; margin: 0; }
             .container { text-align: center; border: 4px solid #f97316; padding: 60px; border-radius: 40px; background: #fff; }
@@ -794,9 +794,9 @@ export default function App() {
         </head>
         <body>
           <div class="container">
-            <h1>PDKS Giri�/��k�� QR Kodu</h1>
+            <h1>PDKS Giris/k QR Kodu</h1>
             ${qrSvg}
-            <p>L�tfen giri� ve ��k��larda bu kodu okutunuz.</p>
+            <p>Ltfen giri ve klarda bu kodu okutunuz.</p>
           </div>
           <script>
             window.onload = () => { 
@@ -817,30 +817,30 @@ export default function App() {
     const newSecret = `PDKS-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     try {
       await settingsMutation.mutateAsync({ ...settings, qrSecret: newSecret });
-      setStatus({ type: 'success', message: 'QR kod ba�ar�yla g�ncellendi.' });
+      setStatus({ type: 'success', message: 'QR kod baaryla guncellendi.' });
     } catch (error) {
-      setStatus({ type: 'error', message: 'QR kod g�ncellenirken hata olu�tu.' });
+      setStatus({ type: 'error', message: 'QR kod gncellenirken hata olutu.' });
     }
   };
 
   const isProcessingScan = React.useRef(false);
   const lastScanTimestamp = React.useRef<number>(0);
-  const SCAN_COOLDOWN_MS = 60000; // 1 dakika m�kerrer koruma
+  const SCAN_COOLDOWN_MS = 60000; // 1 dakika mkerrer koruma
 
   const handleScanSuccess = async (decodedText: string) => {
     if (!settings || !user || !profile || !scanType || isProcessingScan.current) return;
     
-    // M�kerrer okutma korumas�: Son 1 dakika i�inde ayn� i�lem yap�ld�ysa engelle
+    // Mkerrer okutma korumas: Son 1 dakika iinde ayn ilem yapldysa engelle
     const now = Date.now();
     if (now - lastScanTimestamp.current < SCAN_COOLDOWN_MS) {
       const kalanSaniye = Math.ceil((SCAN_COOLDOWN_MS - (now - lastScanTimestamp.current)) / 1000);
-      setStatus({ type: 'error', message: `�ok h�zl� okutma! L�tfen ${kalanSaniye} saniye bekleyin.` });
+      setStatus({ type: 'error', message: `ok hzl okutma! Ltfen ${kalanSaniye} saniye bekleyin.` });
       setShowScanner(false);
       return;
     }
     
     isProcessingScan.current = true;
-    // Scanner'� hemen kapat ki �ift okutma olmas�n
+    // Scanner' hemen kapat ki ift okutma olmasn
     setShowScanner(false);
     
     try {
@@ -853,14 +853,14 @@ export default function App() {
           type: scanType,
           ipAddress: currentIp,
           status: 'error',
-          errorMessage: 'Ge�ersiz QR Kod Okutuldu'
+          errorMessage: 'Geersiz QR Kod Okutuldu'
         } });
-        setStatus({ type: 'error', message: 'Ge�ersiz QR kod. L�tfen i� yerindeki g�ncel kodu okutun.' });
+        setStatus({ type: 'error', message: 'Geersiz QR kod. Ltfen i yerindeki gncel kodu okutun.' });
         isProcessingScan.current = false;
         return;
       }
 
-      // 2. IP Check (Nakliye yetkisi olan personel i�in IP kontrol� atla)
+      // 2. IP Check (Nakliye yetkisi olan personel iin IP kontrol atla)
       const hasRemotePermission = profile.canRemoteCheckIn === true;
       if (settings.officeIp && currentIp !== settings.officeIp && !hasRemotePermission) {
         await attendanceMutation.mutateAsync({ method: 'POST', payload: {
@@ -870,14 +870,14 @@ export default function App() {
           type: scanType,
           ipAddress: currentIp,
           status: 'error',
-          errorMessage: 'Hatal� IP / A� Eri�imi Denemesi'
+          errorMessage: 'Hatal IP / A Eriimi Denemesi'
         } });
-        setStatus({ type: 'error', message: `Hatal� a�. Sadece i� yeri Wi-Fi a��na ba�l�yken i�lem yapabilirsiniz. (Mevcut IP: ${currentIp})` });
+        setStatus({ type: 'error', message: `Hatal a. Sadece i yeri Wi-Fi ana balyken ilem yapabilirsiniz. (Mevcut IP: ${currentIp})` });
         isProcessingScan.current = false;
         return;
       }
 
-      // 3. Nakliye modunda m�s�n?
+      // 3. Nakliye modunda msn?
       const isRemote = hasRemotePermission && settings.officeIp && currentIp !== settings.officeIp;
 
       // 4. Konum al
@@ -905,7 +905,7 @@ export default function App() {
         remoteNote: isRemote ? (remoteNote || '') : null,
       };
 
-      // 5. �evrimd��� ise kuyru�a al, online ise direkt yaz
+      // 5. evrimd ise kuyrua al, online ise direkt yaz
       if (!isOnline) {
         const queueItem: OfflineQueueItem = {
           id: `offline-${Date.now()}-${Math.random().toString(36).substring(2)}`,
@@ -916,7 +916,7 @@ export default function App() {
         await addToOfflineQueue(queueItem);
         const newCount = (await getOfflineQueue()).length;
         setOfflineQueueCount(newCount);
-        setStatus({ type: 'success', message: `?? �nternetsiz mod: ${scanType === 'in' ? 'Giri�' : '��k��'} kaydedildi, internet gelince senkronize edilecek.` });
+        setStatus({ type: 'success', message: `?? nternetsiz mod: ${scanType === 'in' ? 'Giris' : 'k'} kaydedildi, internet gelince senkronize edilecek.` });
       } else {
         const clientNow = new Date();
         // Firestore'a yaz
@@ -925,7 +925,7 @@ export default function App() {
           timestamp: new Date().toISOString(),
         } });
 
-        // OPT�M�ST�K UI: Snapshot beklemeden an�nda state'e ekle
+        // OPTMSTK UI: Snapshot beklemeden annda state'e ekle
         const optimisticLog: AttendanceLog = {
           id: newDocRef.id,
           ...logPayload,
@@ -938,7 +938,7 @@ export default function App() {
           await checkAndCreateAutoOvertime(user.uid, profile.name, clientNow, 'out');
         }
 
-        // Y�neticiye giri� bildirimi g�nder
+        // Yneticiye giri bildirimi gnder
         fetch('/api/notify/checkin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -951,17 +951,17 @@ export default function App() {
           })
         }).catch(() => {});
 
-        setStatus({ type: 'success', message: `${isRemote ? '?? Nakliye: ' : ''}${scanType === 'in' ? 'Giri�' : '��k��'} i�leminiz ba�ar�yla kaydedildi.` });
+        setStatus({ type: 'success', message: `${isRemote ? '?? Nakliye: ' : ''}${scanType === 'in' ? 'Giris' : 'k'} ileminiz baaryla kaydedildi.` });
       }
 
 
-      // M�kerrer koruma: Son ba�ar�l� okutma zaman�n� kaydet
+      // Mkerrer koruma: Son basarili okutma zamann kaydet
       lastScanTimestamp.current = Date.now();
       setRemoteNote('');
       setScanType(null);
     } catch (error) {
       console.error("Save log error:", error);
-      setStatus({ type: 'error', message: '��lem kaydedilirken bir hata olu�tu.' });
+      setStatus({ type: 'error', message: 'lem kaydedilirken bir hata olutu.' });
     } finally {
       isProcessingScan.current = false;
     }
@@ -1000,16 +1000,16 @@ export default function App() {
 
     try {
       await settingsMutation.mutateAsync(newSettings);
-      setStatus({ type: 'success', message: 'Ayarlar g�ncellendi.' });
+      setStatus({ type: 'success', message: 'Ayarlar guncellendi.' });
     } catch (error) {
-      setStatus({ type: 'error', message: 'Ayarlar g�ncellenirken hata olu�tu.' });
+      setStatus({ type: 'error', message: 'Ayarlar gncellenirken hata olutu.' });
     }
   };
 
   const exportToExcel = (personnelUid: string, monthStr: string) => {
     const personnel = allUsers.find(u => u.uid === personnelUid);
     if (!personnel || !settings) {
-      setStatus({ type: 'error', message: 'Personel veya ayar bilgisi bulunamad�.' });
+      setStatus({ type: 'error', message: 'Personel veya ayar bilgisi bulunamad.' });
       return;
     }
 
@@ -1044,11 +1044,11 @@ export default function App() {
         
         dayData.push({
           'Tarih': format(date, 'd MMM yyyy, EEE', { locale: tr }),
-          'Giri�': leave ? leave.type.toUpperCase() : 'HAREKET YOK',
-          '��k��': '-',
-          'B�r�t S�re (Saat)': '0',
+          'Giris': leave ? leave.type.toUpperCase() : 'HAREKET YOK',
+          'k': '-',
+          'Brt Sre (Saat)': '0',
           'Mola (Saat)': '0',
-          'Net �al��ma (Saat)': '0',
+          'Net Calisma (Saat)': '0',
           'Fazla Mesai (Saat)': '0',
           'Hafta Tatili Mesaisi (Saat)': '0'
         });
@@ -1106,11 +1106,11 @@ export default function App() {
 
       dayData.push({
         'Tarih': format(date, 'd MMM yyyy, EEE', { locale: tr }),
-        'Giri�': format(entry, 'HH:mm'),
-        '��k��': format(exit, 'HH:mm') + (format(exit, 'yyyy-MM-dd') !== dateStr ? ` (+1)` : ''),
-        'B�r�t S�re (Saat)': rawDuration.toFixed(2),
+        'Giris': format(entry, 'HH:mm'),
+        'k': format(exit, 'HH:mm') + (format(exit, 'yyyy-MM-dd') !== dateStr ? ` (+1)` : ''),
+        'Brt Sre (Saat)': rawDuration.toFixed(2),
         'Mola (Saat)': breakTime.toFixed(2),
-        'Net �al��ma (Saat)': normalWork.toFixed(2),
+        'Net Calisma (Saat)': normalWork.toFixed(2),
         'Fazla Mesai (Saat)': overtime.toFixed(2),
         'Hafta Tatili Mesaisi (Saat)': weekendWork.toFixed(2)
       });
@@ -1124,30 +1124,30 @@ export default function App() {
 
   const handleManualLog = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TargetId: a��k modaldan, se�ili personelden veya mevcut log'dan al
+    // TargetId: ak modaldan, seili personelden veya mevcut log'dan al
     const targetId = selectedDayDetails?.userId || selectedPersonnelId || editingLog?.userId || user?.uid;
     
 
     
     if (!targetId || !profile) {
-      setStatus({ type: 'error', message: 'Hedef kullan�c� veya profil bilgisi eksik.' });
+      setStatus({ type: 'error', message: 'Hedef kullanc veya profil bilgisi eksik.' });
       return;
     }
 
-    // Hedef kullan�c�y� bul: allUsers'da, kendi profilinde veya log'daki userName ile
+    // Hedef kullancy bul: allUsers'da, kendi profilinde veya log'daki userName ile
     const targetUser: UserProfile | null = 
       allUsers.find(u => u.uid === targetId) || 
       (profile.uid === targetId ? profile : null);
     
     if (!targetUser) {
-      setStatus({ type: 'error', message: 'Kullan�c� bulunamad�. L�tfen sayfay� yenileyip tekrar deneyin.' });
+      setStatus({ type: 'error', message: 'Kullanc bulunamad. Ltfen sayfay yenileyip tekrar deneyin.' });
       return;
     }
 
-    // Yetki kurallar�:
-    // - 'admin' rol�: herkese yapabilir
+    // Yetki kurallar:
+    // - 'admin' rol: herkese yapabilir
     // - 'mudur' / 'takim_lideri': sadece managerId'si kendi uid'i olan personele
-    // - Di�er roller: sadece kendi kayd�na
+    // - Dier roller: sadece kendi kaydna
     const isSystemAdmin = profile.role === 'admin';
     const isManagerOf = targetUser.managerId === profile.uid;
     const isSelf = profile.uid === targetId;
@@ -1155,13 +1155,13 @@ export default function App() {
     const isAuthorized = isSystemAdmin || isManagerOf || isSelf;
 
     if (!isAuthorized) {
-      setStatus({ type: 'error', message: 'Bu personelin kayd�n� d�zenleme yetkiniz yok.' });
+      setStatus({ type: 'error', message: 'Bu personelin kaydn dzenleme yetkiniz yok.' });
       return;
     }
 
     const timestamp = new Date(`${manualLogDate}T${manualLogTime}:00`);
     if (isNaN(timestamp.getTime())) {
-      setStatus({ type: 'error', message: 'Ge�ersiz tarih veya saat.' });
+      setStatus({ type: 'error', message: 'Geersiz tarih veya saat.' });
       return;
     }
     const auditInfo = `Manuel: ${profile.name}`;
@@ -1171,7 +1171,7 @@ export default function App() {
       const newStatus = isAdminOrManager ? 'success' : 'pending';
 
       if (editingLog?.id) {
-        // Mevcut kayd� g�ncelle
+        // Mevcut kayd gncelle
         await attendanceMutation.mutateAsync({ method: 'PUT', id: editingLog.id, payload: {
           timestamp: timestamp,
           type: manualLogType,
@@ -1179,9 +1179,9 @@ export default function App() {
           status: newStatus,
           ...(isAdminOrManager ? { manualEntry: true, isRemote: false, remoteNote: null } : {}),
         } });
-        setStatus({ type: 'success', message: 'Kay�t g�ncellendi.' });
+        setStatus({ type: 'success', message: 'Kayt guncellendi.' });
       } else {
-        // Yeni kay�t ekle
+        // Yeni kayt ekle
         await attendanceMutation.mutateAsync({ method: 'POST', payload: {
           userId: targetId,
           userName: targetUser.name,
@@ -1191,20 +1191,20 @@ export default function App() {
           status: newStatus,
           manualEntry: true,
           isRemote: !isAdminOrManager,
-          ...(isAdminOrManager ? {} : { remoteNote: 'Ge�mi� Kay�t (Onay Bekliyor)' }),
+          ...(isAdminOrManager ? {} : { remoteNote: 'Gemi Kayt (Onay Bekliyor)' }),
         } });
-        setStatus({ type: 'success', message: isAdminOrManager ? 'Kay�t eklendi.' : 'Kay�t eklendi, y�netici onay� bekleniyor.' });
+        setStatus({ type: 'success', message: isAdminOrManager ? 'Kayt eklendi.' : 'Kayt eklendi, yonetici onay bekleniyor.' });
         
         if (!isAdminOrManager) {
           fetch('/api/notify/checkin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.uid, userName: profile.name, type: manualLogType, isRemote: true, remoteNote: 'Ge�mi� Manuel Kay�t Eklendi' })
+            body: JSON.stringify({ userId: user.uid, userName: profile.name, type: manualLogType, isRemote: true, remoteNote: 'Gemi Manuel Kayt Eklendi' })
           }).catch(() => {});
         }
       }
       
-      // ��k�� ise otomatik mesai kontrol�
+      // k ise otomatik mesai kontrol
       if (manualLogType === 'out') {
         await checkAndCreateAutoOvertime(targetId, targetUser.name, timestamp, 'out');
       }
@@ -1213,7 +1213,7 @@ export default function App() {
       setEditingLog(null);
     } catch (error: any) {
       console.error('Manual log error:', error);
-      setStatus({ type: 'error', message: `Kay�t ba�ar�s�z: ${error?.message || error?.code || 'Bilinmeyen hata'}` });
+      setStatus({ type: 'error', message: `Kayt baarsz: ${error?.message || error?.code || 'Bilinmeyen hata'}` });
     }
   };
 
@@ -1226,16 +1226,16 @@ export default function App() {
       });
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Kay�t ba�ar�yla silindi.' });
+        setStatus({ type: 'success', message: 'Kayt baaryla silindi.' });
         setDeletingLog(null);
         setShowManualLogModal(false);
       } else {
         const data = await response.json();
-        setStatus({ type: 'error', message: data.error || 'Kay�t silinirken hata olu�tu.' });
+        setStatus({ type: 'error', message: data.error || 'Kayt silinirken hata olutu.' });
       }
     } catch (error) {
       console.error("Delete log error:", error);
-      setStatus({ type: 'error', message: 'Kay�t silinirken sistem hatas� olu�tu.' });
+      setStatus({ type: 'error', message: 'Kayt silinirken sistem hatas olutu.' });
     }
   };
 
@@ -1259,7 +1259,7 @@ export default function App() {
       if (existing) return;
 
       const targetUser = allUsers.find(u => u.uid === userId);
-      // managerId yoksa admin'e y�nlendir (personele manager atanmam�� olabilir)
+      // managerId yoksa admin'e ynlendir (personele manager atanmam olabilir)
       const effectiveManagerId = targetUser?.managerId || 'admin_initial';
 
       // Calculate hours from standard shift end
@@ -1269,7 +1269,7 @@ export default function App() {
       if (overtimeHours <= 0) return;
 
       try {
-        await overtimeMutation.mutateAsync({ method: 'POST', payload: { userName, managerId: effectiveManagerId, date: dateStr, hours: overtimeHours, description: 'Otomatik Sistem Kayd� (' + format(timestamp, 'HH:mm') + ' ��k��)', status: 'pending' } });
+        await overtimeMutation.mutateAsync({ method: 'POST', payload: { userName, managerId: effectiveManagerId, date: dateStr, hours: overtimeHours, description: 'Otomatik Sistem Kayd (' + format(timestamp, 'HH:mm') + ' k)', status: 'pending' } });
       } catch (error) {
         console.error("Auto overtime error:", error);
       }
@@ -1281,11 +1281,11 @@ export default function App() {
     
     try {
       await userMutation.mutateAsync({ method: 'DELETE', id: uid }); 
-      setStatus({ type: 'success', message: 'Personel kayd� pasif hale getirildi.' });
+      setStatus({ type: 'success', message: 'Personel kayd pasif hale getirildi.' });
       setDeletingUser(null);
     } catch (error) {
       console.error("Delete user error:", error);
-      setStatus({ type: 'error', message: 'Personel silinirken hata olu�tu.' });
+      setStatus({ type: 'error', message: 'Personel silinirken hata olutu.' });
     }
   };
 
@@ -1300,12 +1300,12 @@ export default function App() {
     const reason = (formData.get('reason') as string).trim();
 
     if (!reason) {
-      setStatus({ type: 'error', message: 'L�tfen bir a��klama giriniz.' });
+      setStatus({ type: 'error', message: 'Ltfen bir aklama giriniz.' });
       return;
     }
 
     if (isNaN(days) || days <= 0) {
-      setStatus({ type: 'error', message: 'L�tfen ge�erli bir g�n say�s� giriniz.' });
+      setStatus({ type: 'error', message: 'Ltfen geerli bir gn says giriniz.' });
       return;
     }
 
@@ -1319,7 +1319,7 @@ export default function App() {
       let attachmentUrl = '';
       if (reportFile) {
         if (reportFile.size > 800 * 1024) {
-          setStatus({ type: 'error', message: 'Dosya boyutu �ok b�y�k. L�tfen 800 KB alt�nda bir dosya se�in veya resmi k�rp�n.' });
+          setStatus({ type: 'error', message: 'Dosya boyutu ok byk. Ltfen 800 KB altnda bir dosya sein veya resmi krpn.' });
           setUploading(false);
           return;
         }
@@ -1327,7 +1327,7 @@ export default function App() {
         attachmentUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error('Dosya okunamad�.'));
+          reader.onerror = () => reject(new Error('Dosya okunamad.'));
           reader.readAsDataURL(reportFile);
         });
       }
@@ -1340,7 +1340,7 @@ export default function App() {
         attachmentUrl,
         status: 'pending'
       } });
-      // Y�neticiye push bildirimi g�nder
+      // Yneticiye push bildirimi gnder
       fetch('/api/notify/newrequest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1351,7 +1351,7 @@ export default function App() {
           managerId: profile.managerId || 'admin_initial'
         })
       }).catch(() => {});
-      setStatus({ type: 'success', message: leaveType === 'report' ? 'Raporunuz iletildi.' : '�zin talebiniz iletildi.' });
+      setStatus({ type: 'success', message: leaveType === 'report' ? 'Raporunuz iletildi.' : 'Izin talebiniz iletildi.' });
       (e.target as HTMLFormElement).reset();
       setLeaveStartDate('');
       setLeaveEndDate('');
@@ -1360,8 +1360,8 @@ export default function App() {
       setLeaveType('annual');
     } catch (error: any) {
       console.error("Leave request error:", error);
-      const msg = error?.message || 'Bilinmeyen bir hata olu�tu.';
-      setStatus({ type: 'error', message: `Talep iletilirken hata olu�tu: ${msg}` });
+      const msg = error?.message || 'Bilinmeyen bir hata olutu.';
+      setStatus({ type: 'error', message: `Talep iletilirken hata olutu: ${msg}` });
     } finally {
       setUploading(false);
     }
@@ -1391,7 +1391,7 @@ export default function App() {
       setTimeout(() => URL.revokeObjectURL(url), 100);
     } catch (e) {
       console.error(e);
-      setStatus({ type: 'error', message: 'Dosya indirilirken hata olu�tu.' });
+      setStatus({ type: 'error', message: 'Dosya indirilirken hata olutu.' });
     }
   };
   const submitOvertimeRequest = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -1404,13 +1404,13 @@ export default function App() {
     const description = formData.get('description') as string;
 
     if (isNaN(hours) || hours <= 0) {
-      setStatus({ type: 'error', message: 'L�tfen ge�erli bir saat giriniz.' });
+      setStatus({ type: 'error', message: 'Ltfen geerli bir saat giriniz.' });
       return;
     }
 
     try {
       await overtimeMutation.mutateAsync({ method: 'POST', payload: { userName: profile.name, managerId: profile.managerId || 'admin_initial', date, hours, description, status: 'pending' } });
-      // Y�neticiye push bildirimi g�nder
+      // Yneticiye push bildirimi gnder
       fetch('/api/notify/newrequest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1426,7 +1426,7 @@ export default function App() {
       setOvertimeEndTime('');
       setCalcOvertimeHours(0);
     } catch (error) {
-      setStatus({ type: 'error', message: 'Talep iletilirken hata olu�tu.' });
+      setStatus({ type: 'error', message: 'Talep iletilirken hata olutu.' });
     }
   };
 
@@ -1434,7 +1434,7 @@ export default function App() {
     try {
       
 
-      // Push bildirimi g�nder (arka planda, hata olsa bile devam)
+      // Push bildirimi gnder (arka planda, hata olsa bile devam)
       fetch('/api/notify/approval', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1442,13 +1442,13 @@ export default function App() {
           targetUid: requestData.userId,
           isApproved: action === 'approved',
           requestType: collectionName === 'leaveRequests' ? 'leave' : collectionName === 'attendance' ? 'manual' : 'overtime',
-          actorName: profile?.name || 'Y�netici'
+          actorName: profile?.name || 'Ynetici'
         })
       }).catch(() => {});
 
-      setStatus({ type: 'success', message: `Talep ${action === 'approved' ? 'onayland�' : 'reddedildi'}.` });
+      setStatus({ type: 'success', message: `Talep ${action === 'approved' ? 'onayland' : 'reddedildi'}.` });
     } catch (error) {
-      setStatus({ type: 'error', message: '��lem s�ras�nda hata olu�tu.' });
+      setStatus({ type: 'error', message: 'lem srasnda hata olutu.' });
     }
   };
 
@@ -1480,19 +1480,19 @@ export default function App() {
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pdks_token') },
         body: JSON.stringify({
           userId: deletingLeave.userId,
-          title: '�zin �ptali',
-          message: deletingLeave.startDate + ' tarihindeki izniniz y�netici taraf�ndan iptal edildi. Neden: ' + reason,
+          title: 'Izin ptali',
+          message: deletingLeave.startDate + ' tarihindeki izniniz yonetici tarafndan iptal edildi. Neden: ' + reason,
           type: 'error',
           read: false
         })
       }).catch(() => {});
 
-      setStatus({ type: 'success', message: '�zin talebi silindi ve bakiye iade edildi.' });
+      setStatus({ type: 'success', message: 'Izin talebi silindi ve bakiye iade edildi.' });
       setDeletingLeave(null);
       setDeletionReason('');
     } catch (error) {
       console.error("Delete error:", error);
-      setStatus({ type: 'error', message: '�zin silinirken hata olu�tu.' });
+      setStatus({ type: 'error', message: 'Izin silinirken hata olutu.' });
     }
   };
 
@@ -1510,10 +1510,10 @@ export default function App() {
 
     try {
       await leaveMutation.mutateAsync({ method: 'PUT', id: editingLeave.id!, payload: updates });
-      setStatus({ type: 'success', message: '�zin talebi g�ncellendi.' });
+      setStatus({ type: 'success', message: 'Izin talebi guncellendi.' });
       setEditingLeave(null);
     } catch (error) {
-      setStatus({ type: 'error', message: 'G�ncelleme s�ras�nda hata olu�tu.' });
+      setStatus({ type: 'error', message: 'Gncelleme srasnda hata olutu.' });
     }
   };
 
@@ -1550,15 +1550,15 @@ export default function App() {
       });
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Personel bilgileri g�ncellendi.' });
+        setStatus({ type: 'success', message: 'Personel bilgileri guncellendi.' });
         setEditingUser(null);
       } else {
         const data = await response.json();
-        setStatus({ type: 'error', message: data.error || 'G�ncelleme s�ras�nda hata olu�tu.' });
+        setStatus({ type: 'error', message: data.error || 'Gncelleme srasnda hata olutu.' });
       }
     } catch (error) {
       console.error("Update user error:", error);
-      setStatus({ type: 'error', message: 'Sistem hatas�.' });
+      setStatus({ type: 'error', message: 'Sistem hatas.' });
     }
   };
 
@@ -1578,20 +1578,20 @@ export default function App() {
       });
 
       if (response.ok) {
-        setStatus({ type: 'success', message: '�ifreniz ba�ar�yla g�ncellendi.' });
+        setStatus({ type: 'success', message: 'Sifreniz baaryla guncellendi.' });
         setShowPasswordChangeModal(false);
         setNewPassword('');
       } else {
         const data = await response.json();
-        setStatus({ type: 'error', message: data.error || '�ifre g�ncellenirken bir hata olu�tu.' });
+        setStatus({ type: 'error', message: data.error || 'Sifre gncellenirken bir hata olutu.' });
       }
     } catch (error) {
       console.error("Password change error:", error);
-      setStatus({ type: 'error', message: 'Sistem hatas�.' });
+      setStatus({ type: 'error', message: 'Sistem hatas.' });
     }
   };
 
-  // Hareketleri .ics takvim dosyas�na aktarma
+  // Hareketleri .ics takvim dosyasna aktarma
   const exportToCalendar = (userId: string, month: string) => {
     const [year, m] = month.split('-').map(Number);
     const userLogs = logs
@@ -1607,7 +1607,7 @@ export default function App() {
       });
 
     if (userLogs.length === 0) {
-      setStatus({ type: 'error', message: 'Bu ay i�in hareket kayd� bulunamad�.' });
+      setStatus({ type: 'error', message: 'Bu ay iin hareket kayd bulunamad.' });
       return;
     }
 
@@ -1638,8 +1638,8 @@ export default function App() {
           'BEGIN:VEVENT',
           `DTSTART:${formatICSDate(inTime)}`,
           `DTEND:${formatICSDate(outTime)}`,
-          `SUMMARY:${userName} - �� G�n�`,
-          `DESCRIPTION:Giri�: ${format(inTime, 'HH:mm')}${outLog ? ' / ��k��: ' + format(outTime, 'HH:mm') : ' (��k�� yok)'}`,
+          `SUMMARY:${userName} -  Gn`,
+          `DESCRIPTION:Giris: ${format(inTime, 'HH:mm')}${outLog ? ' / k: ' + format(outTime, 'HH:mm') : ' (k yok)'}`,
           `UID:pdks-${dateKey}-${inLog.userId}@pdks`,
           'END:VEVENT'
         );
@@ -1666,7 +1666,7 @@ export default function App() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setStatus({ type: 'success', message: 'Takvim dosyas� indirildi. Telefonunuzda a�arak takviminize ekleyebilirsiniz.' });
+    setStatus({ type: 'success', message: 'Takvim dosyas indirildi. Telefonunuzda aarak takviminize ekleyebilirsiniz.' });
   };
 
   if (loading) {
@@ -1677,7 +1677,7 @@ export default function App() {
             <div className="h-12 w-12 rounded-full border-[3px] border-zinc-800" />
             <div className="absolute inset-0 h-12 w-12 rounded-full border-[3px] border-transparent border-t-orange-500 animate-spin" />
           </div>
-          <p className="text-xs font-medium text-zinc-500 tracking-widest uppercase">Y�kleniyor</p>
+          <p className="text-xs font-medium text-zinc-500 tracking-widest uppercase">Ykleniyor</p>
         </div>
       </div>
     );
@@ -1721,14 +1721,14 @@ export default function App() {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">�ifre</label>
+              <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Sifre</label>
               <div className="relative">
                 <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
                 <input 
                   name="password"
                   type="password"
                   required
-                  placeholder="�ifre giriniz"
+                  placeholder="Sifre giriniz"
                   className="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 pl-12 pr-4 py-3.5 text-sm font-medium placeholder:text-zinc-700 focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 focus:outline-none transition-all"
                 />
               </div>
@@ -1748,15 +1748,15 @@ export default function App() {
               type="submit"
               className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 py-4 font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:shadow-orange-500/40 hover:scale-[1.02] active:scale-[0.98]"
             >
-              Giri� Yap
+              Giris Yap
             </button>
           </form>
           
           <p className="text-center text-xs text-zinc-600">
-            Giri� bilgilerinizi y�neticinizden temin edebilirsiniz.
+            Giris bilgilerinizi yoneticinizden temin edebilirsiniz.
           </p>
           <div className="mt-4 text-center text-[10px] text-zinc-700 font-mono">
-            Cihaz Kimli�i: {getOrCreateDeviceId()}
+            Cihaz Kimligi: {getOrCreateDeviceId()}
           </div>
         </motion.div>
       </div>
@@ -1780,14 +1780,14 @@ export default function App() {
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden text-right md:block">
               <p className="text-sm font-medium theme-text">{profile?.name}</p>
-              <p className="text-xs text-zinc-500">{profile?.role === 'admin' ? 'Y�netici' : 'Personel'}</p>
+              <p className="text-xs text-zinc-500">{profile?.role === 'admin' ? 'Ynetici' : 'Personel'}</p>
             </div>
 
-            {/* Tema De�i�tirici */}
+            {/* Tema Deitirici */}
             <button
               onClick={cycleTheme}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900/10 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-orange-500"
-              title={`Tema: ${theme === 'dark' ? 'Koyu' : theme === 'light' ? 'A��k' : 'Sistem'}`}
+              title={`Tema: ${theme === 'dark' ? 'Koyu' : theme === 'light' ? 'Ak' : 'Sistem'}`}
             >
               {theme === 'dark' ? <Moon size={18} /> : theme === 'light' ? <Sun size={18} /> : <Monitor size={18} />}
             </button>
@@ -1836,7 +1836,7 @@ export default function App() {
                             }}
                             className="text-[10px] text-orange-500 font-bold hover:text-orange-400 transition"
                           >
-                            T�m�n� Okundu
+                            Tmn Okundu
                           </button>
                         )}
                       </div>
@@ -1852,7 +1852,7 @@ export default function App() {
                               onClick={() => {
                                 markNotificationRead(notif.id!);
                                 if (notif.link) {
-                                  // link -> uygulama rotas� normalize et
+                                  // link -> uygulama rotas normalize et
                                   const routeMap: Record<string, string> = {
                                     '/takvim': '/home',
                                     '/hareketler': '/movements',
@@ -1959,13 +1959,13 @@ export default function App() {
 
         {activeTab === 'home' && (
           <>
-            {/* �evrimd��� Mod Uyar�s� */}
+            {/* evrimd Mod Uyars */}
             {!isOnline && (
               <div className="flex items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
                 <WifiOff size={18} className="text-amber-400 shrink-0" />
                 <div>
-                  <p className="text-sm font-bold text-amber-400">�evrimd��� Mod</p>
-                  <p className="text-xs text-amber-400/70">�nternet yok. Hareketler cihaz�n�za kaydedilecek, ba�lant� gelince otomatik g�nderilecek.</p>
+                  <p className="text-sm font-bold text-amber-400">evrimd Mod</p>
+                  <p className="text-xs text-amber-400/70">nternet yok. Hareketler cihaznza kaydedilecek, balant gelince otomatik gnderilecek.</p>
                 </div>
               </div>
             )}
@@ -1974,7 +1974,7 @@ export default function App() {
                 <Clock size={18} className="text-blue-400 shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-blue-400">{offlineQueueCount} Bekleyen Hareket</p>
-                  <p className="text-xs text-blue-400/70">�nternet geldi. Senkronize ediliyor...</p>
+                  <p className="text-xs text-blue-400/70">nternet geldi. Senkronize ediliyor...</p>
                 </div>
               </div>
             )}
@@ -1984,7 +1984,7 @@ export default function App() {
               <button
                 onClick={() => {
                   if (profile?.canRemoteCheckIn) {
-                    // Uzaktan yetkili: her zaman y�ntem se�im modal'� g�ster
+                    // Uzaktan yetkili: her zaman yntem seim modal' gster
                     setPendingScanType('in');
                     setShowRemoteModal(true);
                   } else {
@@ -1996,7 +1996,7 @@ export default function App() {
               >
                 <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 transition-transform group-hover:scale-150" />
                 <LogIn size={40} />
-                <span className="text-lg font-bold">Giri� Yap</span>
+                <span className="text-lg font-bold">Giris Yap</span>
                 {profile?.canRemoteCheckIn && <span className="text-[10px] opacity-70 flex items-center gap-1"><Truck size={10} /> Nakliye Yetkili</span>}
               </button>
               <button
@@ -2012,38 +2012,38 @@ export default function App() {
               >
                 <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/5 transition-transform group-hover:scale-150" />
                 <LogOut size={40} />
-                <span className="text-lg font-bold">��k�� Yap</span>
+                <span className="text-lg font-bold">k Yap</span>
                 {profile?.canRemoteCheckIn && <span className="text-[10px] opacity-70 flex items-center gap-1"><Truck size={10} /> Nakliye Yetkili</span>}
               </button>
             </div>
 
 
-            {/* Y�netici Dashboard �zet */}
+            {/* Ynetici Dashboard zet */}
             {profile?.role === 'admin' && dashboardStats && (
               <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <button
-                  onClick={() => setDashboardStatModal({ title: '�u An Ofiste', color: 'emerald', icon: <LogIn size={18} />, people: dashboardStats.presentList })}
+                  onClick={() => setDashboardStatModal({ title: 'u An Ofiste', color: 'emerald', icon: <LogIn size={18} />, people: dashboardStats.presentList })}
                   className="rounded-2xl border theme-border bg-emerald-500/10 p-4 text-left hover:bg-emerald-500/20 transition-colors cursor-pointer"
                 >
                   <div className="text-2xl font-black text-emerald-500">{dashboardStats.present}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600/70">�u An Ofiste</div>
-                  <div className="text-[9px] text-emerald-700/60 mt-1">Detay i�in t�kla</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600/70">u An Ofiste</div>
+                  <div className="text-[9px] text-emerald-700/60 mt-1">Detay iin tkla</div>
                 </button>
                 <button
-                  onClick={() => setDashboardStatModal({ title: '�zinli', color: 'orange', icon: <FileText size={18} />, people: dashboardStats.onLeaveList })}
+                  onClick={() => setDashboardStatModal({ title: 'Izinli', color: 'orange', icon: <FileText size={18} />, people: dashboardStats.onLeaveList })}
                   className="rounded-2xl border theme-border bg-orange-500/10 p-4 text-left hover:bg-orange-500/20 transition-colors cursor-pointer"
                 >
                   <div className="text-2xl font-black text-orange-500">{dashboardStats.onLeave}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600/70">�zinli</div>
-                  <div className="text-[9px] text-orange-700/60 mt-1">Detay i�in t�kla</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600/70">Izinli</div>
+                  <div className="text-[9px] text-orange-700/60 mt-1">Detay iin tkla</div>
                 </button>
                 <button
-                  onClick={() => setDashboardStatModal({ title: 'Ge� Kalan', color: 'red', icon: <Clock size={18} />, people: dashboardStats.lateList })}
+                  onClick={() => setDashboardStatModal({ title: 'Ge Kalan', color: 'red', icon: <Clock size={18} />, people: dashboardStats.lateList })}
                   className="rounded-2xl border theme-border bg-red-500/10 p-4 text-left hover:bg-red-500/20 transition-colors cursor-pointer"
                 >
                   <div className="text-2xl font-black text-red-500">{dashboardStats.late}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-red-600/70">Ge� Kalan</div>
-                  <div className="text-[9px] text-red-700/60 mt-1">Detay i�in t�kla</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-red-600/70">Ge Kalan</div>
+                  <div className="text-[9px] text-red-700/60 mt-1">Detay iin tkla</div>
                 </button>
                 <button
                   onClick={() => setDashboardStatModal({ title: 'Gelmeyen', color: 'zinc', icon: <UserX size={18} />, people: dashboardStats.absentList })}
@@ -2051,18 +2051,18 @@ export default function App() {
                 >
                   <div className="text-2xl font-black theme-text">{dashboardStats.absent}</div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Gelmeyen</div>
-                  <div className="text-[9px] text-zinc-600 mt-1">Detay i�in t�kla</div>
+                  <div className="text-[9px] text-zinc-600 mt-1">Detay iin tkla</div>
                 </button>
               </div>
             )}
 
-            {/* Personel Ge� Kalma Uyar�s� */}
+            {/* Personel Ge Kalma Uyars */}
             {profile?.role !== 'admin' && userLateCountThisMonth > 0 && (
               <div className="mb-6 flex items-center gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4">
                 <AlertTriangle size={24} className="text-red-500 shrink-0" />
                 <div>
-                  <p className="text-sm font-bold text-red-500">Ge� Kalma Uyar�s�</p>
-                  <p className="text-xs text-red-500/70">Bu ay i�erisinde <strong>{userLateCountThisMonth} kez</strong> mesai ba�lang�� saati ({settings?.shiftStart || '08:00'}) sonras�nda giri� yapt�n�z.</p>
+                  <p className="text-sm font-bold text-red-500">Ge Kalma Uyars</p>
+                  <p className="text-xs text-red-500/70">Bu ay ierisinde <strong>{userLateCountThisMonth} kez</strong> mesai balang saati ({settings?.shiftStart || '08:00'}) sonrasnda giri yaptnz.</p>
                 </div>
               </div>
             )}
@@ -2072,9 +2072,9 @@ export default function App() {
               <div className="rounded-2xl border theme-border theme-bg-secondary p-4">
                 <div className="mb-2 flex items-center gap-2 text-zinc-500">
                   {isOnline ? <Wifi size={16} /> : <WifiOff size={16} className="text-amber-400" />}
-                  <span className="text-xs font-semibold uppercase tracking-wider">A� Durumu</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider">A Durumu</span>
                 </div>
-                <p className="text-sm font-medium theme-text">{isOnline ? (currentIp || 'Tespit ediliyor...') : '�evrimd���'}</p>
+                <p className="text-sm font-medium theme-text">{isOnline ? (currentIp || 'Tespit ediliyor...') : 'evrimd'}</p>
                 <p className="text-[10px] text-zinc-600">Mevcut IP Adresiniz</p>
               </div>
               <div className="rounded-2xl border theme-border theme-bg-secondary p-4">
@@ -2083,14 +2083,14 @@ export default function App() {
                   <span className="text-xs font-semibold uppercase tracking-wider">Konum</span>
                 </div>
                 <p className="text-sm font-medium theme-text">Aktif</p>
-                <p className="text-[10px] text-zinc-600">GPS Do�rulamas�</p>
+                <p className="text-[10px] text-zinc-600">GPS Dorulamas</p>
               </div>
               <div className="rounded-2xl border theme-border theme-bg-secondary p-4">
                 <div className="mb-2 flex items-center gap-2 text-zinc-500">
                   <Shield size={16} />
-                  <span className="text-xs font-semibold uppercase tracking-wider">G�venlik</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider">Gvenlik</span>
                 </div>
-                <p className="text-sm font-medium theme-text">QR + IP Korumal�</p>
+                <p className="text-sm font-medium theme-text">QR + IP Korumal</p>
                 <p className="text-[10px] text-zinc-600">Sistem Durumu</p>
               </div>
             </div>
@@ -2101,7 +2101,7 @@ export default function App() {
               <section className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Calendar size={24} className="text-orange-500" /> Giri� ��k�� Hareketlerim
+                    <Calendar size={24} className="text-orange-500" /> Giris k Hareketlerim
                   </h2>
                   <div className="flex items-center gap-2">
                     <button 
@@ -2126,7 +2126,7 @@ export default function App() {
                 </div>
                 
               <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 text-center text-[10px] font-bold text-zinc-500 uppercase tracking-tight">
-                {['Pzt', 'Sal', '�ar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => <div key={day} className="truncate">{day}</div>)}
+                {['Pzt', 'Sal', 'ar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => <div key={day} className="truncate">{day}</div>)}
               </div>
               <div className="grid grid-cols-7 gap-2" key={`cal-${selectedMonth}-${logs.filter(l => l.userId === user?.uid).length}`}>
                 {(() => {
@@ -2262,7 +2262,7 @@ export default function App() {
                                   leave.type === 'report' ? "text-purple-400" : "text-orange-500"
                                 )}>
                                   <span className="text-[10px] font-black uppercase tracking-tighter">
-                                    {leave.type === 'report' ? 'Rapor' : '�zin'}
+                                    {leave.type === 'report' ? 'Rapor' : 'Izin'}
                                   </span>
                                 </div>
                                 {/* Mobile */}
@@ -2284,11 +2284,11 @@ export default function App() {
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-zinc-900 pt-4 px-2">
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
-                    <span className="text-[9px] font-bold text-zinc-500 uppercase">Giri�</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase">Giris</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-orange-400 shadow-[0_0_5px_rgba(251,146,60,0.5)]" />
-                    <span className="text-[9px] font-bold text-zinc-500 uppercase">��k��</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase">k</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-blue-500" />
@@ -2296,7 +2296,7 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-1.5 w-4 rounded-full bg-orange-500" />
-                    <span className="text-[9px] font-bold text-zinc-500 uppercase">�zin</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase">Izin</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-1.5 w-4 rounded-full bg-purple-500" />
@@ -2304,19 +2304,19 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_5px_rgba(239,68,68,0.5)]" />
-                    <span className="text-[9px] font-bold text-zinc-500 uppercase">Hatal�</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase">Hatal</span>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-zinc-900 bg-zinc-900/10 overflow-hidden">
-                  <div className="p-3 border-b border-zinc-900 bg-zinc-900/40 text-[10px] font-bold text-zinc-500 uppercase">Detayl� Liste</div>
+                  <div className="p-3 border-b border-zinc-900 bg-zinc-900/40 text-[10px] font-bold text-zinc-500 uppercase">Detayl Liste</div>
                   <div className="max-h-[400px] overflow-y-auto">
                     {/* Desktop Table View */}
                     <table className="hidden md:table w-full text-left">
                       <tbody className="divide-y divide-zinc-900">
                         {logs.filter(l => l.userId === user?.uid && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM') === selectedMonth).length === 0 ? (
                           <tr>
-                            <td className="p-8 text-center text-zinc-500 text-xs italic">Bu ay i�in kay�t bulunmuyor.</td>
+                            <td className="p-8 text-center text-zinc-500 text-xs italic">Bu ay iin kayt bulunmuyor.</td>
                           </tr>
                         ) : (
                           logs.filter(l => l.userId === user?.uid && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM') === selectedMonth)
@@ -2336,11 +2336,11 @@ export default function App() {
                                   log.type === 'in' ? "bg-emerald-500/10 text-emerald-500" : "bg-orange-500/10 text-orange-500"
                                 )}>
                                   {log.status === 'error' ? <ShieldAlert size={10} /> : log.status === 'pending' ? <Clock3 size={10} /> : log.type === 'in' ? <LogIn size={10} /> : <LogOut size={10} />}
-                                  {log.status === 'error' ? 'Hata' : log.status === 'pending' ? 'Bekliyor' : (log.type === 'in' ? 'Giri�' : '��k��')}
+                                  {log.status === 'error' ? 'Hata' : log.status === 'pending' ? 'Bekliyor' : (log.type === 'in' ? 'Giris' : 'k')}
                                 </div>
                               </td>
                               <td className="p-4 text-right">
-                                <p className="text-[10px] text-zinc-400 font-bold">{log.status === 'error' ? log.errorMessage : log.status === 'pending' ? 'Y�netici onay� bekleniyor' : ''}</p>
+                                <p className="text-[10px] text-zinc-400 font-bold">{log.status === 'error' ? log.errorMessage : log.status === 'pending' ? 'Ynetici onay bekleniyor' : ''}</p>
                                 <p className="text-[10px] text-zinc-600 font-mono">{log.ipAddress}</p>
                               </td>
                             </tr>
@@ -2352,7 +2352,7 @@ export default function App() {
                     {/* Mobile Card View */}
                     <div className="md:hidden divide-y divide-zinc-900">
                       {logs.filter(l => l.userId === user?.uid && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM') === selectedMonth).length === 0 ? (
-                        <div className="p-8 text-center text-zinc-500 text-xs italic">Bu ay i�in kay�t bulunmuyor.</div>
+                        <div className="p-8 text-center text-zinc-500 text-xs italic">Bu ay iin kayt bulunmuyor.</div>
                       ) : (
                         logs.filter(l => l.userId === user?.uid && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM') === selectedMonth)
                           .sort((a,b) => (b.timestamp?.toDate?.()?.getTime() || 0) - (a.timestamp?.toDate?.()?.getTime() || 0))
@@ -2370,7 +2370,7 @@ export default function App() {
                               log.status === 'pending' ? "bg-amber-500/10 text-amber-500" :
                               log.type === 'in' ? "bg-emerald-500/10 text-emerald-500" : "bg-orange-500/10 text-orange-500"
                             )}>
-                              {log.status === 'error' ? 'Hata' : log.status === 'pending' ? 'Bekliyor' : (log.type === 'in' ? 'Giri�' : '��k��')}
+                              {log.status === 'error' ? 'Hata' : log.status === 'pending' ? 'Bekliyor' : (log.type === 'in' ? 'Giris' : 'k')}
                             </div>
                           </div>
                         ))
@@ -2424,7 +2424,7 @@ export default function App() {
                     onClick={() => setSelectedPersonnelId(null)}
                     className="flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors w-fit"
                   >
-                    <ArrowLeft size={18} /> Geri D�n
+                    <ArrowLeft size={18} /> Geri Dn
                   </button>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
@@ -2464,7 +2464,7 @@ export default function App() {
                         }}
                         className="w-full md:w-auto flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 md:py-2 text-sm font-bold text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/10"
                       >
-                        <Plus size={18} /> Manuel Kay�t Ekle
+                        <Plus size={18} /> Manuel Kayt Ekle
                       </button>
                     </div>
                   </div>
@@ -2482,15 +2482,15 @@ export default function App() {
           return (
             <>
               <div className="rounded-2xl border border-zinc-900 bg-zinc-900/30 p-4 flex flex-col items-center justify-center">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase">Ayl�k Toplam Mesai</p>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase">Aylk Toplam Mesai</p>
                 <p className="text-2xl font-black text-blue-500">{totalOvertimeHours.toFixed(1)} <span className="text-xs font-normal">Saat</span></p>
               </div>
               <div className="rounded-2xl border border-zinc-900 bg-zinc-900/30 p-4 flex flex-col items-center justify-center">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase">Ayl�k Toplam �zin</p>
-                <p className="text-2xl font-black text-orange-500">{totalLeaveDays} <span className="text-xs font-normal">G�n</span></p>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase">Aylk Toplam Izin</p>
+                <p className="text-2xl font-black text-orange-500">{totalLeaveDays} <span className="text-xs font-normal">Gn</span></p>
               </div>
               <div className="rounded-2xl border border-zinc-900 bg-zinc-900/30 p-4 flex flex-col items-center justify-center">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase">Giri� Kayd� Say�s�</p>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase">Giris Kayd Says</p>
                 <p className="text-2xl font-black text-emerald-500">{userLogs.filter(l => l.type === 'in').length} <span className="text-xs font-normal">Kez</span></p>
               </div>
             </>
@@ -2499,7 +2499,7 @@ export default function App() {
       </div>
 
       <div className="grid grid-cols-7 gap-2 mb-2 text-center text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-        {['Pzt', 'Sal', '�ar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => <div key={day}>{day}</div>)}
+        {['Pzt', 'Sal', 'ar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => <div key={day}>{day}</div>)}
       </div>
                     <div className="grid grid-cols-7 gap-1 sm:gap-2">
                       {(() => {
@@ -2590,7 +2590,7 @@ export default function App() {
                                 {leave && (
                                   <>
                                     <span className="hidden sm:block text-[8px] lg:text-[9px] font-black uppercase leading-none truncate max-w-full text-orange-500">
-                                      {leave.type === 'report' ? 'RA' : '�Z'}
+                                      {leave.type === 'report' ? 'RA' : 'Z'}
                                     </span>
                                     <div className={cn(
                                       "sm:hidden h-1 w-full rounded-full",
@@ -2641,11 +2641,11 @@ export default function App() {
                     <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-zinc-900 pt-4 px-2">
                       <div className="flex items-center gap-1.5">
                         <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
-                        <span className="text-[9px] font-bold text-zinc-500 uppercase">Giri�</span>
+                        <span className="text-[9px] font-bold text-zinc-500 uppercase">Giris</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="h-2 w-2 rounded-full bg-orange-400 shadow-[0_0_5px_rgba(251,146,60,0.5)]" />
-                        <span className="text-[9px] font-bold text-zinc-500 uppercase">��k��</span>
+                        <span className="text-[9px] font-bold text-zinc-500 uppercase">k</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="h-2 w-2 rounded-full bg-blue-500" />
@@ -2653,7 +2653,7 @@ export default function App() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="h-1.5 w-4 rounded-full bg-orange-500" />
-                        <span className="text-[9px] font-bold text-zinc-500 uppercase">�zin</span>
+                        <span className="text-[9px] font-bold text-zinc-500 uppercase">Izin</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="h-1.5 w-4 rounded-full bg-purple-500" />
@@ -2663,7 +2663,7 @@ export default function App() {
 
                   <div className="mt-12 space-y-4">
                     <h4 className="text-lg font-bold flex items-center gap-2">
-                      <Clock size={20} className="text-orange-500" /> T�m Giri�/��k�� Kay�tlar�
+                      <Clock size={20} className="text-orange-500" /> Tm Giris/k Kaytlar
                     </h4>
                     <div className="overflow-hidden rounded-2xl border border-zinc-900">
                       {/* Desktop Table */}
@@ -2671,9 +2671,9 @@ export default function App() {
                         <thead>
                           <tr className="border-b border-zinc-900 bg-zinc-900/40 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                             <th className="p-4">Tarih / Saat</th>
-                            <th className="p-4">��lem</th>
+                            <th className="p-4">lem</th>
                             <th className="p-4">Kaynak</th>
-                            <th className="p-4 text-right">��lem</th>
+                            <th className="p-4 text-right">lem</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-900">
@@ -2690,7 +2690,7 @@ export default function App() {
                                     "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
                                     log.type === 'in' ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-800 text-zinc-400"
                                   )}>
-                                    {log.type === 'in' ? 'Giri�' : '��k��'}
+                                    {log.type === 'in' ? 'Giris' : 'k'}
                                   </span>
                                 </td>
                                 <td className="p-4 text-xs text-zinc-500">
@@ -2735,7 +2735,7 @@ export default function App() {
                                   "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase",
                                   log.type === 'in' ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-800 text-zinc-400"
                                 )}>
-                                  {log.type === 'in' ? 'Giri�' : '��k��'}
+                                  {log.type === 'in' ? 'Giris' : 'k'}
                                 </span>
                                 <div className="flex items-center gap-3">
                                   <button
@@ -2786,7 +2786,7 @@ export default function App() {
           <section className="space-y-8">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold flex items-center gap-2">
-                <Users size={28} className="text-orange-500" /> Personel Y�netimi
+                <Users size={28} className="text-orange-500" /> Personel Ynetimi
               </h2>
             </div>
 
@@ -2802,15 +2802,15 @@ export default function App() {
                     <input 
                       name="name"
                       required
-                      placeholder="�rn: Ahmet Y�lmaz"
+                      placeholder="rn: Ahmet Ylmaz"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">�nvan / Pozisyon</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">nvan / Pozisyon</label>
                     <input 
                       name="title"
-                      placeholder="�rn: Yaz�l�m Geli�tirici, B�l�m M�d�r�"
+                      placeholder="rn: Yazlm Gelitirici, Blm Mdr"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -2819,17 +2819,17 @@ export default function App() {
                     <input 
                       name="personnelId"
                       required
-                      placeholder="�rn: ahmet123"
+                      placeholder="rn: ahmet123"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">�ifre</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Sifre</label>
                     <input 
                       name="password"
                       type="password"
                       required
-                      placeholder="�ifre belirleyin"
+                      placeholder="Sifre belirleyin"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -2840,24 +2840,24 @@ export default function App() {
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     >
                       <option value="employee">Personel</option>
-                      <option value="admin">Y�netici</option>
+                      <option value="admin">Ynetici</option>
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Ba�l� Oldu�u Y�netici</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Bal Olduu Ynetici</label>
                     <select 
                       name="managerId"
                       required
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     >
-                      <option value="admin_initial">Sistem Y�neticisi</option>
+                      <option value="admin_initial">Sistem Yoneticisi</option>
                       {allUsers.filter(u => u.role === 'admin' && u.uid !== 'admin_initial').map(admin => (
                         <option key={admin.uid} value={admin.uid}>{admin.name}</option>
                       ))}
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Y�ll�k �zin Bakiyesi (G�n)</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Yllk Izin Bakiyesi (Gn)</label>
                     <input 
                       name="leaveBalance"
                       type="number"
@@ -2867,7 +2867,7 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">��e Giri� Tarihi</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">e Giris Tarihi</label>
                     <input 
                       name="startDate"
                       type="date"
@@ -2876,7 +2876,7 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Do�um Tarihi</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Doum Tarihi</label>
                     <input 
                       name="birthDate"
                       type="date"
@@ -2885,20 +2885,20 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Cihaz K�s�tlamas� (UA ��eri�i)</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Cihaz Kstlamas (UA erii)</label>
                     <input 
                       name="allowedDevice"
                       type="text"
-                      placeholder="�rn: iPhone, Samsung, SM-G991B"
+                      placeholder="rn: iPhone, Samsung, SM-G991B"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Sabit Cihaz Kimli�i (Hardware ID)</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Sabit Cihaz Kimligi (Hardware ID)</label>
                     <input 
                       name="deviceId"
                       type="text"
-                      placeholder="Otomatik tan�mlan�r veya ID girin"
+                      placeholder="Otomatik tanmlanr veya ID girin"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -2913,9 +2913,9 @@ export default function App() {
                       <div>
                         <p className="text-sm font-semibold text-white flex items-center gap-2">
                           <Truck size={14} className="text-orange-500" />
-                          Nakliye / Uzaktan Giri� Yetkisi
+                          Nakliye / Uzaktan Giris Yetkisi
                         </p>
-                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis d���ndan (nakliyede) da giri�-��k�� yapabilir. Konumu kaydedilir, y�neticileri bildirim al�r.</p>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis dndan (nakliyede) da giri-k yapabilir. Konumu kaydedilir, yoneticileri bildirim alr.</p>
                       </div>
                     </label>
                   </div>
@@ -2934,10 +2934,10 @@ export default function App() {
               <table className="hidden md:table w-full text-left">
                 <thead>
                   <tr className="border-b border-zinc-900 bg-zinc-900/40">
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500">�sim</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500">sim</th>
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500">ID</th>
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Yetki</th>
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500 text-right">��lem</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500 text-right">lem</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-900">
@@ -2964,7 +2964,7 @@ export default function App() {
                           "rounded-full px-2 py-1 text-[10px] font-bold uppercase",
                           u.role === 'admin' ? "bg-orange-500/10 text-orange-500" : "bg-zinc-800 text-zinc-400"
                         )}>
-                          {u.role === 'admin' ? 'Y�netici' : 'Personel'}
+                          {u.role === 'admin' ? 'Ynetici' : 'Personel'}
                         </span>
                       </td>
                       <td className="p-4 text-right">
@@ -3013,7 +3013,7 @@ export default function App() {
                             "rounded-full px-1.5 py-0.5 text-[9px] font-black uppercase",
                             u.role === 'admin' ? "bg-orange-500/10 text-orange-500" : "bg-zinc-800 text-zinc-600"
                           )}>
-                            {u.role === 'admin' ? 'Y�net' : 'Pers'}
+                            {u.role === 'admin' ? 'Ynet' : 'Pers'}
                           </span>
                         </div>
                       </div>
@@ -3047,7 +3047,7 @@ export default function App() {
           <section className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold flex items-center gap-2">
-                <QrCode size={28} className="text-orange-500" /> QR Kod Olu�turucu
+                <QrCode size={28} className="text-orange-500" /> QR Kod Oluturucu
               </h2>
             </div>
 
@@ -3063,15 +3063,15 @@ export default function App() {
                   />
                 </div>
                 <div className="text-center">
-                  <p className="font-bold text-lg">�� Yeri Giri� QR Kodu</p>
-                  <p className="text-sm text-zinc-500">Bu kodu yazd�r�p i� yerine asabilirsiniz.</p>
+                  <p className="font-bold text-lg"> Yeri Giris QR Kodu</p>
+                  <p className="text-sm text-zinc-500">Bu kodu yazdrp i yerine asabilirsiniz.</p>
                 </div>
                 <div className="flex gap-3">
                   <button 
                     onClick={handlePrintQR}
                     className="flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-2 text-sm font-bold hover:bg-orange-600 transition-colors"
                   >
-                    <Printer size={18} /> Yazd�r
+                    <Printer size={18} /> Yazdr
                   </button>
                   <button 
                     onClick={regenerateQRSecret}
@@ -3085,35 +3085,35 @@ export default function App() {
               <div className="space-y-6">
                 <section className="rounded-3xl border border-zinc-900 bg-zinc-900/20 p-6">
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <SettingsIcon size={20} className="text-orange-500" /> Ayarlar� G�ncelle
+                    <SettingsIcon size={20} className="text-orange-500" /> Ayarlar Gncelle
                   </h3>
                   <form onSubmit={updateSettings} className="space-y-6">
                     <div className="space-y-4">
-                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">�irket Genel Bilgileri</h4>
+                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">irket Genel Bilgileri</h4>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-zinc-500 uppercase">�irket Ad�</label>
+                          <label className="text-xs font-semibold text-zinc-500 uppercase">irket Ad</label>
                           <input 
                             name="companyName"
                             defaultValue={settings?.companyName}
-                            placeholder="�rn: ABC Yaz�l�m Ltd. �ti."
+                            placeholder="rn: ABC Yazlm Ltd. ti."
                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-zinc-500 uppercase">Haftal�k �al��ma G�n�</label>
+                          <label className="text-xs font-semibold text-zinc-500 uppercase">Haftalk Calisma Gn</label>
                           <select 
                             name="workDaysPerWeek"
                             defaultValue={settings?.workDaysPerWeek || 6}
                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                           >
-                            <option value="5">5 G�n</option>
-                            <option value="6">6 G�n</option>
+                            <option value="5">5 Gn</option>
+                            <option value="6">6 Gn</option>
                           </select>
                         </div>
                         <div className="space-y-2">
                           <label className="text-xs font-semibold text-zinc-500 uppercase flex items-center gap-1">
-                            Hesaplama Tolerans� (Dk) <Info size={12} className="text-zinc-600" title="Ge� giri�/erken ��k��/fazla mesai tolerans�" />
+                            Hesaplama Tolerans (Dk) <Info size={12} className="text-zinc-600" title="Ge giri/erken k/fazla mesai tolerans" />
                           </label>
                           <input 
                             name="roundingThresholdMinutes"
@@ -3126,10 +3126,10 @@ export default function App() {
                     </div>
 
                     <div className="space-y-4">
-                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">Vardiya & �al��ma Saatleri</h4>
+                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">Vardiya & Calisma Saatleri</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-zinc-500 uppercase">Mesai Ba�lang�c�</label>
+                          <label className="text-xs font-semibold text-zinc-500 uppercase">Mesai Balangc</label>
                           <input 
                             name="shiftStart"
                             type="time"
@@ -3138,7 +3138,7 @@ export default function App() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-zinc-500 uppercase">Mesai Biti�i</label>
+                          <label className="text-xs font-semibold text-zinc-500 uppercase">Mesai Bitii</label>
                           <input 
                             name="shiftEnd"
                             type="time"
@@ -3150,14 +3150,14 @@ export default function App() {
                     </div>
 
                     <div className="space-y-4">
-                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">G�venlik & Eri�im</h4>
+                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">Gvenlik & Eriim</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-zinc-500 uppercase">�� Yeri IP Adresi</label>
+                          <label className="text-xs font-semibold text-zinc-500 uppercase"> Yeri IP Adresi</label>
                           <input 
                             name="officeIp"
                             defaultValue={settings?.officeIp}
-                            placeholder="�rn: 176.234.12.34"
+                            placeholder="rn: 176.234.12.34"
                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                           />
                         </div>
@@ -3167,7 +3167,7 @@ export default function App() {
                             name="qrSecret"
                             value={settings?.qrSecret || ''}
                             onChange={(e) => setSettings(prev => prev ? { ...prev, qrSecret: e.target.value } : null)}
-                            placeholder="QR i�eri�i ne olmal�?"
+                            placeholder="QR ierii ne olmal?"
                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                           />
                         </div>
@@ -3175,7 +3175,7 @@ export default function App() {
                     </div>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">Mola Kurallar�</label>
+                        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">Mola Kurallar</label>
                         <button 
                           type="button"
                           onClick={() => {
@@ -3191,7 +3191,7 @@ export default function App() {
                         {(settings?.breakRules || []).map((rule, idx) => (
                           <div key={idx} className="flex items-end gap-3 bg-zinc-950/50 p-3 rounded-xl border border-zinc-800/50 group">
                             <div className="flex-1 space-y-1">
-                              <label className="text-[10px] text-zinc-600 uppercase font-bold">�al��ma E�i�i (Saat)</label>
+                              <label className="text-[10px] text-zinc-600 uppercase font-bold">Calisma Eii (Saat)</label>
                               <input 
                                 name="rule_threshold"
                                 type="number"
@@ -3222,12 +3222,12 @@ export default function App() {
                           </div>
                         ))}
                         {(settings?.breakRules || []).length === 0 && (
-                          <p className="text-[10px] text-zinc-600 italic text-center py-4">Hen�z mola kural� tan�mlanmad�. Standart kanun kurallar� uygulan�r.</p>
+                          <p className="text-[10px] text-zinc-600 italic text-center py-4">Henz mola kural tanmlanmad. Standart kanun kurallar uygulanr.</p>
                         )}
                       </div>
                     </div>
                     <button className="w-full rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">
-                      Ayarlar� Kaydet
+                      Ayarlar Kaydet
                     </button>
                   </form>
                 </section>
@@ -3292,7 +3292,7 @@ export default function App() {
             </div>
 
             <div className="rounded-3xl border border-zinc-900 bg-zinc-900/20 p-8 space-y-8">
-              {/* Profil Foto�raf� */}
+              {/* Profil Fotoraf */}
               <div className="flex flex-col items-center gap-3">
                 <div className="relative group">
                   {profile?.avatarUrl ? (
@@ -3327,12 +3327,12 @@ export default function App() {
                       const file = e.target.files?.[0];
                       if (!file || !user) return;
                       if (file.size > 8 * 1024 * 1024) {
-                        setStatus({ type: 'error', message: 'Foto�raf en fazla 8MB olabilir.' });
+                        setStatus({ type: 'error', message: 'Fotoraf en fazla 8MB olabilir.' });
                         return;
                       }
                       setAvatarUploading(true);
                       try {
-                        // Canvas ile yeniden boyutland�r ve s�k��t�r (Firebase Storage yerine)
+                        // Canvas ile yeniden boyutlandr ve sktr (Firebase Storage yerine)
                         const avatarBase64 = await new Promise<string>((resolve, reject) => {
                           const img = new Image();
                           const objectUrl = URL.createObjectURL(file);
@@ -3347,14 +3347,14 @@ export default function App() {
                             URL.revokeObjectURL(objectUrl);
                             resolve(canvas.toDataURL('image/jpeg', 0.8));
                           };
-                          img.onerror = () => reject(new Error('Resim y�klenemedi.'));
+                          img.onerror = () => reject(new Error('Resim yklenemedi.'));
                           img.src = objectUrl;
                         });
                         await userMutation.mutateAsync({ method: 'PUT', id: user.uid, payload: { avatarUrl: avatarBase64 } });
                         setProfile(prev => prev ? { ...prev, avatarUrl: avatarBase64 } : prev);
-                        setStatus({ type: 'success', message: 'Profil foto�raf� g�ncellendi.' });
+                        setStatus({ type: 'success', message: 'Profil fotoraf guncellendi.' });
                       } catch (err: any) {
-                        setStatus({ type: 'error', message: 'Foto�raf y�klenemedi: ' + err.message });
+                        setStatus({ type: 'error', message: 'Fotoraf yklenemedi: ' + err.message });
                       } finally {
                         setAvatarUploading(false);
                         e.target.value = '';
@@ -3366,10 +3366,10 @@ export default function App() {
                 <div className="text-center">
                   <h3 className="text-2xl font-bold">{profile?.name}</h3>
                   {profile?.title && <p className="text-orange-500 font-bold text-sm uppercase tracking-widest mt-1">{profile.title}</p>}
-                  <p className="text-zinc-500 text-xs mt-1">{profile?.role === 'admin' ? 'Y�netici' : 'Personel'}</p>
+                  <p className="text-zinc-500 text-xs mt-1">{profile?.role === 'admin' ? 'Ynetici' : 'Personel'}</p>
                 </div>
 
-                {/* Foto�raf aksiyonlar� */}
+                {/* Fotoraf aksiyonlar */}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => avatarInputRef.current?.click()}
@@ -3377,17 +3377,17 @@ export default function App() {
                     className="flex items-center gap-1.5 rounded-xl bg-orange-500/10 px-4 py-2 text-xs font-bold text-orange-500 hover:bg-orange-500/20 transition-colors disabled:opacity-50"
                   >
                     <Camera size={13} />
-                    {profile?.avatarUrl ? 'De�i�tir' : 'Foto�raf Ekle'}
+                    {profile?.avatarUrl ? 'Deitir' : 'Fotoraf Ekle'}
                   </button>
                   {profile?.avatarUrl && (
                     <button
                       onClick={async () => {
                         if (!user) return;
-                        if (!window.confirm('Profil foto�raf� silinsin mi?')) return;
+                        if (!window.confirm('Profil fotoraf silinsin mi?')) return;
                         try {
                           await userMutation.mutateAsync({ method: 'PUT', id: user.uid, payload: { avatarUrl: null } });
                           setProfile(prev => prev ? { ...prev, avatarUrl: undefined } : prev);
-                          setStatus({ type: 'success', message: 'Profil foto�raf� silindi.' });
+                          setStatus({ type: 'success', message: 'Profil fotoraf silindi.' });
                         } catch (err: any) {
                           setStatus({ type: 'error', message: 'Silinemedi: ' + err.message });
                         }
@@ -3406,20 +3406,20 @@ export default function App() {
                   <p className="font-medium">{profile?.personnelId}</p>
                 </div>
                 <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-4 space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">��e Giri� Tarihi</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">e Giris Tarihi</p>
                   <p className="font-medium">
                     {profile?.startDate ? format(new Date(profile.startDate), 'd MMMM yyyy', { locale: tr }) : '-'}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-4 space-y-1 md:col-span-2">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Resmi Y�ll�k �zin Bakiyesi</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Resmi Yllk Izin Bakiyesi</p>
                   <div className="flex items-center justify-between">
                     <p className="text-2xl font-black text-orange-500">
-                      {getEffectiveLeaveBalance(profile)} G�N
+                      {getEffectiveLeaveBalance(profile)} GN
                     </p>
                     <div className="text-right">
-                      <p className="text-[9px] text-zinc-500 uppercase">Hukuki Hak Edi� (Referans)</p>
-                      <p className="text-xs font-bold text-zinc-400">{calculateLegalLeave(profile?.startDate, profile?.birthDate)} G�n</p>
+                      <p className="text-[9px] text-zinc-500 uppercase">Hukuki Hak Edi (Referans)</p>
+                      <p className="text-xs font-bold text-zinc-400">{calculateLegalLeave(profile?.startDate, profile?.birthDate)} Gn</p>
                     </div>
                   </div>
                 </div>
@@ -3430,7 +3430,7 @@ export default function App() {
                   onClick={() => setShowPasswordChangeModal(true)}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-500/10 py-4 font-bold text-orange-500 transition-colors hover:bg-orange-500/20"
                 >
-                  <Key size={20} /> �ifreyi De�i�tir
+                  <Key size={20} /> Sifreyi Deitir
                 </button>
                 <button 
                   onClick={handleLogout}
@@ -3455,7 +3455,7 @@ export default function App() {
               >
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Edit className="text-orange-500" /> Personel D�zenle
+                    <Edit className="text-orange-500" /> Personel Dzenle
                   </h2>
                   <button 
                     onClick={() => setEditingUser(null)}
@@ -3465,7 +3465,7 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Profil Foto�raf� Y�netimi */}
+                {/* Profil Fotoraf Ynetimi */}
                 <div className="flex items-center gap-5 p-4 rounded-2xl border border-zinc-800 bg-zinc-900/30">
                   <div className="relative group shrink-0">
                     {editingUser.avatarUrl ? (
@@ -3499,24 +3499,24 @@ export default function App() {
                                 URL.revokeObjectURL(objectUrl);
                                 resolve(canvas.toDataURL('image/jpeg', 0.8));
                               };
-                              img.onerror = () => reject(new Error('Resim y�klenemedi.'));
+                              img.onerror = () => reject(new Error('Resim yklenemedi.'));
                               img.src = objectUrl;
                             });
                             await userMutation.mutateAsync({ method: 'PUT', id: editingUser.uid, payload: { avatarUrl: avatarBase64 } });
                             setEditingUser(prev => prev ? { ...prev, avatarUrl: avatarBase64 } : prev);
-                            // Personele bildirim g�nder
+                            // Personele bildirim gnder
                             await fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pdks_token') }, body: JSON.stringify({
                               userId: editingUser.uid,
-                              title: 'Profil Foto�raf�n�z G�ncellendi',
-                              message: `${profile?.name || 'Y�neticiniz'} profil foto�raf�n�z� g�ncelledi.`,
+                              title: 'Profil Fotorafnz Guncellendi',
+                              message: `${profile?.name || 'Yneticiniz'} profil fotorafnz gncelledi.`,
                               type: 'info',
                               read: false,
                               link: '/profile',
                               createdAt: new Date().toISOString(),
                             }) }).catch(() => {});
-                            setStatus({ type: 'success', message: `${editingUser.name} i�in profil foto�raf� g�ncellendi.` });
+                            setStatus({ type: 'success', message: `${editingUser.name} iin profil fotoraf guncellendi.` });
                           } catch (err: any) {
-                            setStatus({ type: 'error', message: 'Foto�raf y�klenemedi: ' + err.message });
+                            setStatus({ type: 'error', message: 'Fotoraf yklenemedi: ' + err.message });
                           } finally {
                             setAvatarUploading(false);
                             e.target.value = '';
@@ -3531,33 +3531,33 @@ export default function App() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm mb-1">Profil Foto�raf�</p>
-                    <p className="text-[11px] text-zinc-500 mb-3">Resmin �zerine t�klayarak foto�raf� de�i�tirebilirsiniz. De�i�iklik personele bildirim olarak iletilir.</p>
+                    <p className="font-bold text-sm mb-1">Profil Fotoraf</p>
+                    <p className="text-[11px] text-zinc-500 mb-3">Resmin zerine tklayarak fotoraf deitirebilirsiniz. Deiiklik personele bildirim olarak iletilir.</p>
                     {editingUser.avatarUrl && (
                       <button
                         type="button"
                         onClick={async () => {
-                          if (!window.confirm('Profil foto�raf� silinsin mi?')) return;
+                          if (!window.confirm('Profil fotoraf silinsin mi?')) return;
                           try {
                             await userMutation.mutateAsync({ method: 'PUT', id: editingUser.uid, payload: { avatarUrl: null } });
                             setEditingUser(prev => prev ? { ...prev, avatarUrl: undefined } : prev);
                             await fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pdks_token') }, body: JSON.stringify({
                               userId: editingUser.uid,
-                              title: 'Profil Foto�raf�n�z Silindi',
-                              message: `${profile?.name || 'Y�neticiniz'} profil foto�raf�n�z� kald�rd�.`,
+                              title: 'Profil Fotorafnz Silindi',
+                              message: `${profile?.name || 'Yneticiniz'} profil fotorafnz kaldrd.`,
                               type: 'info',
                               read: false,
                               link: '/profile',
                               createdAt: new Date().toISOString(),
                             }) }).catch(() => {});
-                            setStatus({ type: 'success', message: 'Foto�raf silindi.' });
+                            setStatus({ type: 'success', message: 'Fotoraf silindi.' });
                           } catch (err: any) {
                             setStatus({ type: 'error', message: 'Silinemedi: ' + err.message });
                           }
                         }}
                         className="flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-1.5 text-[11px] font-bold text-red-500 hover:bg-red-500/20 transition-colors"
                       >
-                        <Trash2 size={11} /> Foto�raf� Kald�r
+                        <Trash2 size={11} /> Fotoraf Kaldr
                       </button>
                     )}
                   </div>
@@ -3574,11 +3574,11 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">�nvan / Pozisyon</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">nvan / Pozisyon</label>
                     <input 
                       name="title"
                       defaultValue={editingUser.title || ''}
-                      placeholder="�rn: B�l�m M�d�r�, Tekniker"
+                      placeholder="rn: Blm Mdr, Tekniker"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -3590,18 +3590,18 @@ export default function App() {
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     >
                       <option value="employee">Personel</option>
-                      <option value="admin">Y�netici</option>
+                      <option value="admin">Ynetici</option>
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Ba�l� Oldu�u Y�netici</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Bal Olduu Ynetici</label>
                     <select 
                       name="managerId"
                       required
                       defaultValue={editingUser.managerId || 'admin_initial'}
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     >
-                      <option value="admin_initial">Sistem Y�neticisi</option>
+                      <option value="admin_initial">Sistem Yoneticisi</option>
                       {allUsers.filter(u => u.role === 'admin' && u.uid !== 'admin_initial').map(admin => (
                         <option key={admin.uid} value={admin.uid}>{admin.name}</option>
                       ))}
@@ -3609,8 +3609,8 @@ export default function App() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-semibold text-zinc-500 uppercase flex items-center justify-between">
-                      Y�ll�k �zin Bakiyesi (G�n)
-                      <span className="text-[10px] text-orange-500 lowercase font-normal italic">Mevcut: {getEffectiveLeaveBalance(editingUser)} G�n</span>
+                      Yllk Izin Bakiyesi (Gn)
+                      <span className="text-[10px] text-orange-500 lowercase font-normal italic">Mevcut: {getEffectiveLeaveBalance(editingUser)} Gn</span>
                     </label>
                     <input 
                       name="leaveBalance"
@@ -3621,7 +3621,7 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">��e Giri� Tarihi</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">e Giris Tarihi</label>
                     <input 
                       name="startDate"
                       type="date"
@@ -3630,7 +3630,7 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Do�um Tarihi</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Doum Tarihi</label>
                     <input 
                       name="birthDate"
                       type="date"
@@ -3639,19 +3639,19 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Cihaz K�s�tlamas�</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Cihaz Kstlamas</label>
                     <input 
                       name="allowedDevice"
                       type="text"
                       defaultValue={editingUser.allowedDevice || ''}
-                      placeholder="�rn: iPhone, Samsung"
+                      placeholder="rn: iPhone, Samsung"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
-                    <p className="text-[10px] text-zinc-600">Bo� b�rak�l�rsa her cihazdan giri� yapabilir.</p>
+                    <p className="text-[10px] text-zinc-600">Bo braklrsa her cihazdan giri yapabilir.</p>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-zinc-500 uppercase">Sabit Cihaz Kimli�i (Fixed ID)</label>
+                      <label className="text-xs font-semibold text-zinc-500 uppercase">Sabit Cihaz Kimligi (Fixed ID)</label>
                       {editingUser.deviceId && (
                         <button 
                           type="button"
@@ -3667,12 +3667,12 @@ export default function App() {
                                 updates: { deviceId: '' }
                               })
                             }).then(() => {
-                              setStatus({ type: 'success', message: 'Cihaz kilidi kald�r�ld�.' });
+                              setStatus({ type: 'success', message: 'Cihaz kilidi kaldrld.' });
                             });
                           }}
                           className="text-[10px] font-bold text-red-500 hover:underline"
                         >
-                          Cihaz Kilidini Kald�r
+                          Cihaz Kilidini Kaldr
                         </button>
                       )}
                     </div>
@@ -3680,11 +3680,11 @@ export default function App() {
                       name="deviceId"
                       type="text"
                       defaultValue={editingUser.deviceId || ''}
-                      placeholder="Otomatik atan�r, manuel girmek i�in yap��t�r�n"
+                      placeholder="Otomatik atanr, manuel girmek iin yaptrn"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
-                  {/* Nakliye / Uzaktan giri� yetkisi */}
+                  {/* Nakliye / Uzaktan giri yetkisi */}
                   <div className="md:col-span-2">
                     <label className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 cursor-pointer hover:border-orange-500/50 transition-colors">
                       <input 
@@ -3697,19 +3697,19 @@ export default function App() {
                       <div>
                         <p className="text-sm font-semibold text-white flex items-center gap-2">
                           <Truck size={14} className="text-orange-500" />
-                          Nakliye / Uzaktan Giri� Yetkisi
+                          Nakliye / Uzaktan Giris Yetkisi
                         </p>
-                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis d���ndan (nakliyede) da giri�-��k�� yapabilir. Konumu kaydedilir, y�neticileri bildirim al�r.</p>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis dndan (nakliyede) da giri-k yapabilir. Konumu kaydedilir, yoneticileri bildirim alr.</p>
                       </div>
                     </label>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">�ifre S�f�rla (Yeni �ifre)</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Sifre Sfrla (Yeni Sifre)</label>
                     <input 
                       name="password"
                       type="password"
-                      placeholder="De�i�tirmek istemiyorsan�z bo� b�rak�n"
+                      placeholder="Deitirmek istemiyorsanz bo brakn"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -3725,7 +3725,7 @@ export default function App() {
                       Sil
                     </button>
                     <button className="flex-[2] rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">
-                      De�i�iklikleri Kaydet
+                      Deiiklikleri Kaydet
                     </button>
                   </div>
                 </form>
@@ -3755,9 +3755,9 @@ export default function App() {
                 <div>
                   <h3 className="text-xl font-bold flex items-center gap-2">
                     <Clock4 size={24} className="text-orange-500" />
-                    {editingLog ? 'Kayd� D�zenle' : 'Manuel Kay�t Ekle'}
+                    {editingLog ? 'Kayd Dzenle' : 'Manuel Kayt Ekle'}
                   </h3>
-                  {/* Hedef ki�i ad�n� g�ster */}
+                  {/* Hedef kii adn gster */}
                   {(() => {
                     const tid = selectedDayDetails?.userId || selectedPersonnelId || editingLog?.userId;
                     const tName = tid ? (allUsers.find(u => u.uid === tid)?.name || (profile?.uid === tid ? profile?.name : null)) : null;
@@ -3791,7 +3791,7 @@ export default function App() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase">��lem Tipi</label>
+                  <label className="text-xs font-semibold text-zinc-500 uppercase">lem Tipi</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -3801,7 +3801,7 @@ export default function App() {
                         manualLogType === 'in' ? "bg-emerald-600 text-white" : "bg-zinc-900 text-zinc-500"
                       )}
                     >
-                      Giri�
+                      Giris
                     </button>
                     <button
                       type="button"
@@ -3811,7 +3811,7 @@ export default function App() {
                         manualLogType === 'out' ? "bg-orange-600 text-white" : "bg-zinc-900 text-zinc-500"
                       )}
                     >
-                      ��k��
+                      k
                     </button>
                   </div>
                 </div>
@@ -3830,7 +3830,7 @@ export default function App() {
                     type="submit"
                     className="flex-[2] rounded-xl bg-orange-500 py-4 font-bold text-white transition-colors hover:bg-orange-600"
                   >
-                    {editingLog ? 'G�ncelle' : 'Kaydet'}
+                    {editingLog ? 'Gncelle' : 'Kaydet'}
                   </button>
                 </div>
               </form>
@@ -3851,34 +3851,34 @@ export default function App() {
               className="relative w-full max-w-lg rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-2xl"
             >
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-xl font-bold">�zin Talebini D�zenle</h3>
+                <h3 className="text-xl font-bold">Izin Talebini Dzenle</h3>
                 <button onClick={() => setEditingLeave(null)} className="rounded-full bg-zinc-900 p-2 text-zinc-500 hover:bg-zinc-800"><X size={20} /></button>
               </div>
               <form onSubmit={handleUpdateLeave} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Ba�lang��</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Balang</label>
                     <input name="startDate" type="date" required defaultValue={editingLeave.startDate} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Biti�</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Biti</label>
                     <input name="endDate" type="date" required defaultValue={editingLeave.endDate} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none" />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase">G�n Say�s�</label>
+                  <label className="text-xs font-semibold text-zinc-500 uppercase">Gn Says</label>
                   <input name="days" type="number" required defaultValue={editingLeave.days} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-zinc-500 uppercase">Durum</label>
                   <select name="status" defaultValue={editingLeave.status} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none appearance-none">
                     <option value="pending">Bekliyor</option>
-                    <option value="approved">Onayland�</option>
+                    <option value="approved">Onayland</option>
                     <option value="rejected">Reddedildi</option>
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase">A��klama</label>
+                  <label className="text-xs font-semibold text-zinc-500 uppercase">Aklama</label>
                   <textarea name="reason" required defaultValue={editingLeave.reason} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none h-24 resize-none" />
                 </div>
                 <div className="flex gap-2">
@@ -3893,7 +3893,7 @@ export default function App() {
                   >
                     Sil
                   </button>
-                  <button type="submit" className="flex-[2] rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">G�ncelle</button>
+                  <button type="submit" className="flex-[2] rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">Gncelle</button>
                 </div>
               </form>
             </motion.div>
@@ -3913,7 +3913,7 @@ export default function App() {
               className="relative w-full max-w-lg rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-2xl"
             >
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-xl font-bold">Mesai D�zenle</h3>
+                <h3 className="text-xl font-bold">Mesai Dzenle</h3>
                 <button onClick={() => setEditingOvertime(null)} className="rounded-full bg-zinc-900 p-2 text-zinc-500 hover:bg-zinc-800"><X size={20} /></button>
               </div>
               <form onSubmit={async (e) => {
@@ -3926,7 +3926,7 @@ export default function App() {
                   status: formData.get('status')
                 } });
                 setEditingOvertime(null);
-                setStatus({ type: 'success', message: 'Mesai kayd� g�ncellendi' });
+                setStatus({ type: 'success', message: 'Mesai kayd guncellendi' });
               }} className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-zinc-500 uppercase">Tarih</label>
@@ -3940,12 +3940,12 @@ export default function App() {
                   <label className="text-xs font-semibold text-zinc-500 uppercase">Durum</label>
                   <select name="status" defaultValue={editingOvertime.status} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none appearance-none">
                     <option value="pending">Bekliyor</option>
-                    <option value="approved">Onayland�</option>
+                    <option value="approved">Onayland</option>
                     <option value="rejected">Reddedildi</option>
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase">A��klama</label>
+                  <label className="text-xs font-semibold text-zinc-500 uppercase">Aklama</label>
                   <textarea name="description" required defaultValue={editingOvertime.description} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none h-24 resize-none" />
                 </div>
                 <div className="flex gap-2">
@@ -3957,13 +3957,13 @@ export default function App() {
                         deleted: true,
                       } });
                       setEditingOvertime(null);
-                      setStatus({ type: 'success', message: 'Mesai kayd� silindi.' });
+                      setStatus({ type: 'success', message: 'Mesai kayd silindi.' });
                     }}
                     className="flex-1 rounded-xl bg-red-500/10 py-3 font-bold text-red-500 transition-colors hover:bg-red-500/20"
                   >
                     Sil
                   </button>
-                  <button type="submit" className="flex-[2] rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">G�ncelle</button>
+                  <button type="submit" className="flex-[2] rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">Gncelle</button>
                 </div>
               </form>
             </motion.div>
@@ -3984,23 +3984,23 @@ export default function App() {
             >
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="text-xl font-bold flex items-center gap-2">
-                  <Key size={24} className="text-orange-500" /> �ifreyi De�i�tir
+                  <Key size={24} className="text-orange-500" /> Sifreyi Deitir
                 </h3>
                 <button onClick={() => setShowPasswordChangeModal(false)} className="rounded-full bg-zinc-900 p-2 text-zinc-500 hover:bg-zinc-800"><X size={20} /></button>
               </div>
               <form onSubmit={handleSelfPasswordChange} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase">Yeni �ifre</label>
+                  <label className="text-xs font-semibold text-zinc-500 uppercase">Yeni Sifre</label>
                   <input 
                     type="password" 
                     required 
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="�ifrenizi girin" 
+                    placeholder="Sifrenizi girin" 
                     className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none" 
                   />
                 </div>
-                <button type="submit" className="w-full rounded-xl bg-orange-500 py-4 font-bold text-white transition-colors hover:bg-orange-600">G�ncelle</button>
+                <button type="submit" className="w-full rounded-xl bg-orange-500 py-4 font-bold text-white transition-colors hover:bg-orange-600">Gncelle</button>
               </form>
             </motion.div>
           </div>
@@ -4038,7 +4038,7 @@ export default function App() {
                   </div>
                   <div>
                     <p className="font-black text-white">{dashboardStatModal.title}</p>
-                    <p className="text-xs text-zinc-400">{dashboardStatModal.people.length} ki�i � Bug�n</p>
+                    <p className="text-xs text-zinc-400">{dashboardStatModal.people.length} kii  Bugn</p>
                   </div>
                 </div>
                 <button onClick={() => setDashboardStatModal(null)} className="rounded-full bg-zinc-800/60 p-2 text-zinc-400 hover:bg-zinc-700">
@@ -4098,7 +4098,7 @@ export default function App() {
               </div>
               
               <div className="space-y-6 pt-4">
-                {/* Manuel Hareket Ekle: admin veya bu g�n�n sahibinin y�neticisi */}
+                {/* Manuel Hareket Ekle: admin veya bu gnn sahibinin yoneticisi */}
                 {(() => {
                   const dayUserId = selectedDayDetails.userId;
                   const dayUser = allUsers.find(u => u.uid === dayUserId);
@@ -4124,11 +4124,11 @@ export default function App() {
                 {/* Logs Section */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-zinc-500 uppercase flex items-center gap-2">
-                    <LogIn size={14} className="text-emerald-500" /> Giri�-��k�� Kay�tlar�
+                    <LogIn size={14} className="text-emerald-500" /> Giris-k Kaytlar
                   </h4>
                   <div className="space-y-2">
                     {logs.filter(l => l.userId === selectedDayDetails.userId && !l.deleted && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM-dd') === selectedDayDetails.date).length === 0 ? (
-                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu g�n i�in giri�/��k�� kayd� yok.</p>
+                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu gn iin giri/k kayd yok.</p>
                     ) : (
                       logs.filter(l => l.userId === selectedDayDetails.userId && !l.deleted && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM-dd') === selectedDayDetails.date)
                         .sort((a,b) => a.timestamp.toDate() - b.timestamp.toDate())
@@ -4158,8 +4158,8 @@ export default function App() {
                               </p>
                               <p className="text-[10px] text-zinc-500 uppercase truncate">
                                 {log.status === 'error' ? log.errorMessage : 
-                                 log.status === 'pending' ? 'Y�netici onay� bekleniyor' :
-                                 (log.type === 'in' ? 'Giri�' : '��k��')}
+                                 log.status === 'pending' ? 'Ynetici onay bekleniyor' :
+                                 (log.type === 'in' ? 'Giris' : 'k')}
                               </p>
                               <p className="text-[9px] text-zinc-600 font-mono truncate">{log.ipAddress}</p>
                             </div>
@@ -4185,11 +4185,11 @@ export default function App() {
                 {/* Overtime Section */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-zinc-500 uppercase flex items-center gap-2">
-                    <Clock size={14} className="text-blue-500" /> Mesai Kay�tlar�
+                    <Clock size={14} className="text-blue-500" /> Mesai Kaytlar
                   </h4>
                   <div className="space-y-2">
                     {overtimeRequests.filter(r => r.userId === selectedDayDetails.userId && r.date === selectedDayDetails.date).length === 0 ? (
-                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu g�n i�in mesai kayd� yok.</p>
+                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu gn iin mesai kayd yok.</p>
                     ) : (
                       overtimeRequests.filter(r => r.userId === selectedDayDetails.userId && r.date === selectedDayDetails.date).map(req => (
                         <div key={req.id} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
@@ -4235,14 +4235,14 @@ export default function App() {
                       >
                         <div className="mb-4 flex justify-center text-red-500"><Trash2 size={32} /></div>
                         <h3 className="text-xl font-bold mb-2">Mesai Silinsin mi?</h3>
-                        <p className="text-sm text-zinc-500 mb-6">{deletingOvertime.date} tarihli {deletingOvertime.hours} saatlik mesai kayd� silinecektir.</p>
+                        <p className="text-sm text-zinc-500 mb-6">{deletingOvertime.date} tarihli {deletingOvertime.hours} saatlik mesai kayd silinecektir.</p>
                         <div className="flex gap-3">
-                          <button onClick={() => setDeletingOvertime(null)} className="flex-1 rounded-xl bg-zinc-900 py-3 font-bold text-zinc-400">Vazge�</button>
+                          <button onClick={() => setDeletingOvertime(null)} className="flex-1 rounded-xl bg-zinc-900 py-3 font-bold text-zinc-400">Vazge</button>
                           <button 
                             onClick={async () => {
                               await overtimeMutation.mutateAsync({ method: 'DELETE', id: deletingOvertime.id! });
                               setDeletingOvertime(null);
-                              setStatus({ type: 'success', message: 'Mesai kayd� silindi.' });
+                              setStatus({ type: 'success', message: 'Mesai kayd silindi.' });
                             }} 
                             className="flex-1 rounded-xl bg-red-500 py-3 font-bold text-white"
                           >
@@ -4257,11 +4257,11 @@ export default function App() {
                 {/* Leave Section */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-zinc-500 uppercase flex items-center gap-2">
-                    <FileText size={14} className="text-orange-500" /> �zin Kay�tlar�
+                    <FileText size={14} className="text-orange-500" /> Izin Kaytlar
                   </h4>
                   <div className="space-y-2">
                     {leaveRequests.filter(r => r.userId === selectedDayDetails.userId && selectedDayDetails.date >= r.startDate && selectedDayDetails.date <= r.endDate).length === 0 ? (
-                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu g�n i�in izin kayd� yok.</p>
+                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu gn iin izin kayd yok.</p>
                     ) : (
                       leaveRequests.filter(r => r.userId === selectedDayDetails.userId && selectedDayDetails.date >= r.startDate && selectedDayDetails.date <= r.endDate).map(req => (
                         <div key={req.id} className="flex flex-col p-3 rounded-xl bg-zinc-900/40 border border-zinc-800 space-y-2">
@@ -4271,7 +4271,7 @@ export default function App() {
                                 <FileText size={14} />
                               </div>
                               <div>
-                                <p className="text-sm font-bold capitalize">{req.type === 'report' ? 'Rapor' : (req.type === 'excuse' ? 'Mazeret' : 'Y�ll�k �zin')}</p>
+                                <p className="text-sm font-bold capitalize">{req.type === 'report' ? 'Rapor' : (req.type === 'excuse' ? 'Mazeret' : 'Yllk Izin')}</p>
                                 <p className={cn("text-[9px] font-bold uppercase", 
                                   req.status === 'approved' ? "text-emerald-500" : 
                                   req.status === 'pending' ? "text-orange-500" : "text-red-500"
@@ -4291,7 +4291,7 @@ export default function App() {
                               onClick={() => handleViewAttachment(req.attachmentUrl!)}
                               className="flex items-center gap-2 rounded-lg bg-zinc-950 p-2 text-[10px] font-bold text-emerald-400 hover:bg-zinc-900 transition-colors mt-2"
                             >
-                              <Download size={14} /> Rapor Belgesini G�r�nt�le
+                              <Download size={14} /> Rapor Belgesini Grntle
                             </button>
                           )}
                           <p className="text-[10px] text-zinc-500 italic">"{req.reason}"</p>
@@ -4319,14 +4319,14 @@ export default function App() {
             >
               <div className="mb-4 flex justify-center text-red-500"><Trash2 size={40} /></div>
               <h3 className="mb-2 text-xl font-bold">Talebi Sil</h3>
-              <p className="mb-4 text-sm text-zinc-500">Bu izin talebini silmek istedi�inize emin misiniz? Personele silme nedeni bildirilecektir.</p>
+              <p className="mb-4 text-sm text-zinc-500">Bu izin talebini silmek istediinize emin misiniz? Personele silme nedeni bildirilecektir.</p>
               
               <div className="mb-6 space-y-1 text-left">
                 <label className="text-[10px] font-bold text-zinc-500 uppercase">Silme Nedeni (Zorunlu)</label>
                 <textarea 
                   value={deletionReason}
                   onChange={(e) => setDeletionReason(e.target.value)}
-                  placeholder="�ptal edilme sebebi..."
+                  placeholder="ptal edilme sebebi..."
                   className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2 text-sm focus:border-red-500 focus:outline-none h-20 resize-none"
                 />
               </div>
@@ -4335,7 +4335,7 @@ export default function App() {
                 <button onClick={() => {
                   setDeletingLeave(null);
                   setDeletionReason('');
-                }} className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-bold text-zinc-500">Vazge�</button>
+                }} className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-bold text-zinc-500">Vazge</button>
                 <button 
                   onClick={() => handleDeleteLeave(deletingLeave.id!, deletionReason)}
                   disabled={!deletionReason.trim()}
@@ -4374,16 +4374,16 @@ export default function App() {
                   <Trash2 size={32} />
                 </div>
               </div>
-              <h3 className="mb-2 text-xl font-bold text-white">Kayd� Sil</h3>
+              <h3 className="mb-2 text-xl font-bold text-white">Kayd Sil</h3>
               <p className="mb-6 text-sm text-zinc-400">
-                Bu kay�t silinecek, emin misiniz? Bu i�lem geri al�namaz.
+                Bu kayt silinecek, emin misiniz? Bu ilem geri alnamaz.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setDeletingLog(null)}
                   className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-bold text-zinc-400 transition-colors hover:bg-zinc-800"
                 >
-                  Vazge�
+                  Vazge
                 </button>
                 <button
                   onClick={() => deleteLog(deletingLog)}
@@ -4410,16 +4410,16 @@ export default function App() {
             >
               <div className="mb-4 flex justify-center text-red-500"><Trash2 size={40} /></div>
               <h3 className="mb-2 text-xl font-bold">Mesaiyi Sil</h3>
-              <p className="mb-6 text-sm text-zinc-500">Bu mesai kayd�n� silmek istedi�inize emin misiniz?</p>
+              <p className="mb-6 text-sm text-zinc-500">Bu mesai kaydn silmek istediinize emin misiniz?</p>
               <div className="flex gap-3">
-                <button onClick={() => setDeletingOvertime(null)} className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-bold text-zinc-500">Vazge�</button>
+                <button onClick={() => setDeletingOvertime(null)} className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-bold text-zinc-500">Vazge</button>
                 <button onClick={async () => {
                   try {
                     await overtimeMutation.mutateAsync({ method: 'DELETE', id: deletingOvertime.id! });
                     setDeletingOvertime(null);
-                    setStatus({ type: 'success', message: 'Mesai kayd� silindi' });
+                    setStatus({ type: 'success', message: 'Mesai kayd silindi' });
                   } catch (e) {
-                    setStatus({ type: 'error', message: 'Hata olu�tu' });
+                    setStatus({ type: 'error', message: 'Hata olutu' });
                   }
                 }} className="flex-1 rounded-xl bg-red-600 py-3 text-sm font-bold text-white">Sil</button>
               </div>
@@ -4452,14 +4452,14 @@ export default function App() {
               </div>
               <h3 className="mb-2 text-xl font-bold text-white">Personeli Sil</h3>
               <p className="mb-6 text-sm text-zinc-400">
-                <strong>{deletingUser.name}</strong> isimli personeli silmek istedi�inize emin misiniz? Bu i�lem personelin sisteme giri�ini engelleyecektir.
+                <strong>{deletingUser.name}</strong> isimli personeli silmek istediinize emin misiniz? Bu ilem personelin sisteme giriini engelleyecektir.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setDeletingUser(null)}
                   className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-bold text-zinc-400 transition-colors hover:bg-zinc-800"
                 >
-                  Vazge�
+                  Vazge
                 </button>
                 <button
                   onClick={() => deleteUser(deletingUser.uid)}
@@ -4485,7 +4485,7 @@ export default function App() {
               >
                 <div className="flex items-center justify-between text-white">
                   <h2 className="text-xl font-bold flex items-center gap-2">
-                    <QrCode /> {scanType === 'in' ? 'Giri�' : '��k��'} Taramas�
+                    <QrCode /> {scanType === 'in' ? 'Giris' : 'k'} Taramas
                   </h2>
                   <button 
                     onClick={() => setShowScanner(false)}
@@ -4498,7 +4498,7 @@ export default function App() {
                   onScanSuccess={handleScanSuccess} 
                   onScanError={(err) => {
                     // Only show fatal errors like permission denied
-                    if (err.includes("izni reddedildi") || err.includes("ba�lat�lamad�")) {
+                    if (err.includes("izni reddedildi") || err.includes("balatlamad")) {
                       setStatus({ type: 'error', message: err });
                       setShowScanner(false);
                     }
@@ -4506,14 +4506,14 @@ export default function App() {
                 />
                 <div className="flex items-center gap-2 rounded-xl bg-orange-500/10 p-4 text-xs text-orange-500">
                   <Wifi size={16} />
-                  <span>Sadece i� yeri Wi-Fi a��na ba�l�yken tarama yapabilirsiniz.</span>
+                  <span>Sadece i yeri Wi-Fi ana balyken tarama yapabilirsiniz.</span>
                 </div>
               </motion.div>
             </div>
           )}
         </AnimatePresence>
 
-      {/* Nakliye / Uzaktan Giri� Se�im Modal */}
+      {/* Nakliye / Uzaktan Giris Seim Modal */}
       <AnimatePresence>
         {showRemoteModal && (
           <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -4524,15 +4524,15 @@ export default function App() {
               transition={{ type: 'spring', damping: 20 }}
               className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-950 overflow-hidden"
             >
-              {/* Ba�l�k */}
+              {/* Balk */}
               <div className="flex items-center gap-3 p-5 border-b border-zinc-800">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500 shrink-0">
                   <Truck size={22} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-white">Giri� Y�ntemi</h3>
+                  <h3 className="font-bold text-white">Giris Yntemi</h3>
                   <p className="text-xs text-zinc-500">
-                    {pendingScanType === 'in' ? '?? Giri�' : '?? ��k��'} i�lemi � Bir y�ntem se�in
+                    {pendingScanType === 'in' ? '?? Giris' : '?? k'} ilemi  Bir yntem sein
                   </p>
                 </div>
                 <button onClick={() => { setShowRemoteModal(false); setRemoteManualMode(false); setRemoteNote(''); setRemoteManualTime(''); }} className="text-zinc-500 hover:text-white p-1">
@@ -4541,9 +4541,9 @@ export default function App() {
               </div>
 
               {!remoteManualMode ? (
-                /* === EKRAN 1: Y�ntem Se�imi === */
+                /* === EKRAN 1: Yntem Seimi === */
                 <div className="p-5 space-y-3">
-                  {/* QR Se�ene�i */}
+                  {/* QR Seenei */}
                   <button
                     onClick={() => {
                       if (pendingScanType) {
@@ -4559,13 +4559,13 @@ export default function App() {
                       <QrCode size={22} />
                     </div>
                     <div>
-                      <p className="font-bold text-white text-sm">QR Kod ile Giri�</p>
-                      <p className="text-xs text-zinc-500 mt-0.5">�� yerindeki QR kodu kameraya okutun</p>
+                      <p className="font-bold text-white text-sm">QR Kod ile Giris</p>
+                      <p className="text-xs text-zinc-500 mt-0.5"> yerindeki QR kodu kameraya okutun</p>
                     </div>
                     <ChevronRight size={18} className="ml-auto text-zinc-600" />
                   </button>
 
-                  {/* Manuel Se�ene�i */}
+                  {/* Manuel Seenei */}
                   <button
                     onClick={() => {
                       setRemoteManualMode(true);
@@ -4577,26 +4577,26 @@ export default function App() {
                       <Clock size={22} />
                     </div>
                     <div>
-                      <p className="font-bold text-white text-sm">Manuel Giri�</p>
-                      <p className="text-xs text-zinc-500 mt-0.5">Saati kendiniz girin (nakliye, saha �al��mas�)</p>
+                      <p className="font-bold text-white text-sm">Manuel Giris</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">Saati kendiniz girin (nakliye, saha Calismas)</p>
                     </div>
                     <ChevronRight size={18} className="ml-auto text-zinc-600" />
                   </button>
 
                   <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex items-start gap-2">
                     <MapPin size={14} className="text-amber-400 shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-400">Her iki y�ntemde de konumunuz ve notunuz y�neticinize iletilir.</p>
+                    <p className="text-xs text-amber-400">Her iki yntemde de konumunuz ve notunuz yoneticinize iletilir.</p>
                   </div>
                 </div>
               ) : (
-                /* === EKRAN 2: Manuel Giri� Formu === */
+                /* === EKRAN 2: Manuel Giris Formu === */
                 <div className="p-5 space-y-4">
                   <button onClick={() => setRemoteManualMode(false)} className="flex items-center gap-1 text-xs text-zinc-500 hover:text-white transition">
-                    <ChevronLeft size={14} /> Geri d�n
+                    <ChevronLeft size={14} /> Geri dn
                   </button>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-400 uppercase">{pendingScanType === 'in' ? 'Giri� Saati' : '��k�� Saati'}</label>
+                    <label className="text-xs font-semibold text-zinc-400 uppercase">{pendingScanType === 'in' ? 'Giris Saati' : 'k Saati'}</label>
                     <input
                       type="time"
                       value={remoteManualTime}
@@ -4606,11 +4606,11 @@ export default function App() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-400 uppercase">A��klama / Konum Notu</label>
+                    <label className="text-xs font-semibold text-zinc-400 uppercase">Aklama / Konum Notu</label>
                     <textarea
                       value={remoteNote}
                       onChange={(e) => setRemoteNote(e.target.value)}
-                      placeholder="�rn: Ankara mal teslimi, �antiye �al��mas�..."
+                      placeholder="rn: Ankara mal teslimi, antiye Calismas..."
                       rows={3}
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none resize-none"
                     />
@@ -4621,7 +4621,7 @@ export default function App() {
                       onClick={() => { setShowRemoteModal(false); setRemoteManualMode(false); setRemoteNote(''); }}
                       className="rounded-xl border border-zinc-700 py-3 text-sm font-bold text-zinc-400 hover:bg-zinc-800 transition"
                     >
-                      �ptal
+                      ptal
                     </button>
                     <button
                       disabled={remoteSubmitting || !remoteManualTime}
@@ -4629,7 +4629,7 @@ export default function App() {
                         if (!user || !profile || !pendingScanType || !remoteManualTime) return;
                         setRemoteSubmitting(true);
                         try {
-                          // Saat bilgisini bug�ne uygula
+                          // Saat bilgisini bugne uygula
                           const [h, m] = remoteManualTime.split(':').map(Number);
                           const clientNow = new Date();
                           clientNow.setHours(h, m, 0, 0);
@@ -4657,7 +4657,7 @@ export default function App() {
 
                           const newDocRef = await attendanceMutation.mutateAsync({ method: 'POST', payload: {
                             ...logPayload,
-                            timestamp: clientNow, // Kullan�c�n�n girdi�i saat
+                            timestamp: clientNow, // Kullancnn girdii saat
                           } });
 
                           // Optimistik UI
@@ -4668,20 +4668,20 @@ export default function App() {
                           };
                           setLogs(prev => [optimisticLog, ...prev.filter(l => l.id !== newDocRef.id)]);
 
-                          // Bildirim g�nder
+                          // Bildirim gnder
                           fetch('/api/notify/checkin', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ userId: user.uid, userName: profile.name, type: pendingScanType, isRemote: true, remoteNote: remoteNote || '' })
                           }).catch(() => {});
 
-                          setStatus({ type: 'success', message: `?? Manuel ${pendingScanType === 'in' ? 'giri�' : '��k��'} talebi al�nd�. Y�netici onay�ndan sonra kesinle�ecek.` });
+                          setStatus({ type: 'success', message: `?? Manuel ${pendingScanType === 'in' ? 'giri' : 'k'} talebi alnd. Ynetici onayndan sonra kesinleecek.` });
                           setShowRemoteModal(false);
                           setRemoteManualMode(false);
                           setRemoteNote('');
                           setRemoteManualTime('');
                         } catch (err) {
-                          setStatus({ type: 'error', message: 'Manuel kay�t s�ras�nda hata olu�tu.' });
+                          setStatus({ type: 'error', message: 'Manuel kayt srasnda hata olutu.' });
                         } finally {
                           setRemoteSubmitting(false);
                         }
@@ -4699,14 +4699,14 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Belge G�r�nt�leyici Modal */}
-      {/* Belge G�r�nt�leyici Modal */}
+      {/* Belge Grntleyici Modal */}
+      {/* Belge Grntleyici Modal */}
       {viewingAttachment && (
         <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-4xl bg-zinc-900 rounded-2xl overflow-hidden flex flex-col border border-zinc-800 h-[80vh] shadow-2xl">
             <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-950">
               <h3 className="font-bold text-white flex items-center gap-2">
-                <FileText size={18} className="text-emerald-500"/> Belge G�r�nt�leyici
+                <FileText size={18} className="text-emerald-500"/> Belge Grntleyici
               </h3>
               <button onClick={() => setViewingAttachment(null)} className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors">
                 <X size={20} />
@@ -4722,13 +4722,13 @@ export default function App() {
                   </div>
                   <h4 className="text-xl font-bold text-white">PDF Belgesi</h4>
                   <p className="text-sm text-zinc-400">
-                    Mobil cihazlarda (�zellikle iOS) yerle�ik PDF g�r�nt�leyiciler tam uyumlu �al��mayabilir. Belgeyi eksiksiz g�r�nt�lemek i�in l�tfen cihaz�n�za indirin veya a��n.
+                    Mobil cihazlarda (zellikle iOS) yerleik PDF grntleyiciler tam uyumlu Calismayabilir. Belgeyi eksiksiz grntlemek iin ltfen cihaznza indirin veya an.
                   </p>
                   <button 
                     onClick={handleDownloadAndOpen}
                     className="mt-4 flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-colors shadow-[0_0_20px_rgba(239,68,68,0.3)]"
                   >
-                    <Download size={18} /> Belgeyi A� / �ndir
+                    <Download size={18} /> Belgeyi A / ndir
                   </button>
                 </div>
               )}
@@ -4736,7 +4736,7 @@ export default function App() {
             {viewingAttachment.startsWith('data:image') && (
               <div className="p-4 bg-zinc-950 border-t border-zinc-800 flex justify-end gap-3">
                 <button onClick={handleDownloadAndOpen} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm transition-colors shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-                  <Download size={16} /> Cihaza �ndir
+                  <Download size={16} /> Cihaza ndir
                 </button>
               </div>
             )}
