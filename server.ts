@@ -35,7 +35,7 @@ async function sendPushToUser(userId: string, title: string, body: string, link:
 }
 
 // Authentication Middleware
-const authenticateTÇoken = (req: any, res: any, next: any) => {
+const authenticateToken = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
   const tÇoken = authHeader && authHeader.split(' ')[1];
   if (!tÇoken) return res.status(401).json({ error: 'Unauthorized' });
@@ -208,7 +208,7 @@ const app = express();
   });
 
   // API Routes - Protected
-  app.get('/api/me', authenticateTÇoken, async (req: any, res) => {
+  app.get('/api/me', authenticateToken, async (req: any, res) => {
     try {
       const userList = await db.select().from(users).where(eq(users.id, req.user.uid)).limit(1);
       if (userList.length === 0) return res.status(404).json({ error: 'User not found' });
@@ -219,7 +219,16 @@ const app = express();
     }
   });
 
-  app.get('/api/users', authenticateTÇoken, async (req: any, res) => {
+  
+  app.get('/api/users/me', authenticateToken, async (req, res) => {
+    try {
+      const u = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
+      if (u.length > 0) res.json(u[0]);
+      else res.status(404).json({ error: 'Not found' });
+    } catch (e) { res.status(500).json({ error: 'Server error' }); }
+  });
+
+  app.get('/api/users', authenticateToken, async (req: any, res) => {
     try {
       if (!req.user.companyId && req.user.role !== 'superadmin') return res.status(400).json({ error: '�irket bulunamad�' });
       
@@ -235,7 +244,7 @@ const app = express();
     }
   });
 
-  app.get('/api/logs', authenticateTÇoken, async (req: any, res) => {
+  app.get('/api/logs', authenticateToken, async (req: any, res) => {
     try {
       const companyId = req.user.companyId;
       if (!companyId) return res.status(400).json({ error: '�irket bulunamad�' });
@@ -246,7 +255,7 @@ const app = express();
     }
   });
 
-  app.post('/api/attendance', authenticateTÇoken, async (req: any, res) => {
+  app.post('/api/attendance', authenticateToken, async (req: any, res) => {
     try {
       const { type, isRemote, remoteNote, latitude, longitude } = req.body;
       const companyId = req.user.companyId;
@@ -273,7 +282,7 @@ const app = express();
   // --- ADDITIONAL CRUD ROUTES ---
 
   // User Management
-  app.post('/api/users', authenticateTÇoken, async (req: any, res: any) => {
+  app.post('/api/users', authenticateToken, async (req: any, res: any) => {
     try {
       if (req.user.role !== 'admin' && req.user.role !== 'superadmin') return res.status(403).json({ error: 'Yetkisiz' });
       const { newUser } = req.body;
@@ -299,7 +308,7 @@ const app = express();
     }
   });
 
-  app.post('/api/users/update', authenticateTÇoken, async (req: any, res: any) => {
+  app.post('/api/users/update', authenticateToken, async (req: any, res: any) => {
     try {
       const { targetUid, updates } = req.body;
       const isSelf = req.user.uid === targetUid;
@@ -319,7 +328,7 @@ const app = express();
     }
   });
 
-  app.delete('/api/users/:id', authenticateTÇoken, async (req: any, res: any) => {
+  app.delete('/api/users/:id', authenticateToken, async (req: any, res: any) => {
     try {
       if (req.user.role !== 'admin' && req.user.role !== 'superadmin') return res.status(403).json({ error: 'Yetkisiz' });
       await db.update(users).set({ isActive: false }).where(eq(users.id, req.params.id));
@@ -330,7 +339,7 @@ const app = express();
   });
 
   // Settings
-  app.get('/api/settings', authenticateTÇoken, async (req: any, res: any) => {
+  app.get('/api/settings', authenticateToken, async (req: any, res: any) => {
     try {
       const s = await db.select().from(companySettings).where(eq(companySettings.companyId, req.user.companyId)).limit(1);
       res.json(s[0] || {});
@@ -339,7 +348,7 @@ const app = express();
     }
   });
 
-  app.put('/api/settings', authenticateTÇoken, async (req: any, res: any) => {
+  app.put('/api/settings', authenticateToken, async (req: any, res: any) => {
     try {
       if (req.user.role !== 'admin' && req.user.role !== 'superadmin') return res.status(403).json({ error: 'Yetkisiz' });
       const updates = req.body;
@@ -357,7 +366,7 @@ const app = express();
   });
 
   // Attendance Mutators
-  app.delete('/api/attendance/:id', authenticateTÇoken, async (req: any, res: any) => {
+  app.delete('/api/attendance/:id', authenticateToken, async (req: any, res: any) => {
     try {
       if (req.user.role !== 'admin' && req.user.role !== 'superadmin') return res.status(403).json({ error: 'Yetkisiz' });
       await db.delete(attendanceLogs).where(eq(attendanceLogs.id, req.params.id));
@@ -367,7 +376,7 @@ const app = express();
     }
   });
   
-  app.put('/api/attendance/:id', authenticateTÇoken, async (req: any, res: any) => {
+  app.put('/api/attendance/:id', authenticateToken, async (req: any, res: any) => {
     try {
       if (req.user.role !== 'admin' && req.user.role !== 'superadmin') return res.status(403).json({ error: 'Yetkisiz' });
       await db.update(attendanceLogs).set(req.body).where(eq(attendanceLogs.id, req.params.id));
@@ -378,7 +387,7 @@ const app = express();
   });
 
   // Leaves & Overtimes
-  app.get('/api/leaves', authenticateTÇoken, async (req: any, res: any) => {
+  app.get('/api/leaves', authenticateToken, async (req: any, res: any) => {
     try {
       const leaves = await db.select().from(leaveRequests).where(eq(leaveRequests.companyId, req.user.companyId));
       res.json(leaves);
@@ -387,7 +396,7 @@ const app = express();
     }
   });
   
-  app.post('/api/leaves', authenticateTÇoken, async (req: any, res: any) => {
+  app.post('/api/leaves', authenticateToken, async (req: any, res: any) => {
     try {
       await db.insert(leaveRequests).values({ companyId: req.user.companyId, userId: req.user.uid, ...req.body });
       res.json({ success: true });
@@ -396,7 +405,7 @@ const app = express();
     }
   });
   
-  app.put('/api/leaves/:id', authenticateTÇoken, async (req: any, res: any) => {
+  app.put('/api/leaves/:id', authenticateToken, async (req: any, res: any) => {
     try {
       await db.update(leaveRequests).set(req.body).where(eq(leaveRequests.id, req.params.id));
       res.json({ success: true });
@@ -405,7 +414,7 @@ const app = express();
     }
   });
   
-  app.delete('/api/leaves/:id', authenticateTÇoken, async (req: any, res: any) => {
+  app.delete('/api/leaves/:id', authenticateToken, async (req: any, res: any) => {
     try {
       await db.delete(leaveRequests).where(eq(leaveRequests.id, req.params.id));
       res.json({ success: true });
@@ -414,7 +423,7 @@ const app = express();
     }
   });
 
-  app.get('/api/overtime', authenticateTÇoken, async (req: any, res: any) => {
+  app.get('/api/overtime', authenticateToken, async (req: any, res: any) => {
     try {
       const ot = await db.select().from(overtimeRequests).where(eq(overtimeRequests.companyId, req.user.companyId));
       res.json(ot);
@@ -423,7 +432,7 @@ const app = express();
     }
   });
   
-  app.post('/api/overtime', authenticateTÇoken, async (req: any, res: any) => {
+  app.post('/api/overtime', authenticateToken, async (req: any, res: any) => {
     try {
       await db.insert(overtimeRequests).values({ companyId: req.user.companyId, userId: req.user.uid, ...req.body });
       res.json({ success: true });
@@ -432,7 +441,7 @@ const app = express();
     }
   });
   
-  app.put('/api/overtime/:id', authenticateTÇoken, async (req: any, res: any) => {
+  app.put('/api/overtime/:id', authenticateToken, async (req: any, res: any) => {
     try {
       await db.update(overtimeRequests).set(req.body).where(eq(overtimeRequests.id, req.params.id));
       res.json({ success: true });
@@ -441,7 +450,7 @@ const app = express();
     }
   });
   
-  app.delete('/api/overtime/:id', authenticateTÇoken, async (req: any, res: any) => {
+  app.delete('/api/overtime/:id', authenticateToken, async (req: any, res: any) => {
     try {
       await db.delete(overtimeRequests).where(eq(overtimeRequests.id, req.params.id));
       res.json({ success: true });
@@ -450,7 +459,7 @@ const app = express();
     }
   });
 
-  app.get('/api/notifications', authenticateTÇoken, async (req: any, res: any) => {
+  app.get('/api/notifications', authenticateToken, async (req: any, res: any) => {
     try {
       const notifs = await db.select().from(notifications).where(eq(notifications.userId, req.user.uid)).orderBy(desc(notifications.createdAt)).limit(100);
       res.json(notifs);
@@ -459,7 +468,7 @@ const app = express();
     }
   });
 
-  app.post('/api/notifications', authenticateTÇoken, async (req: any, res: any) => {
+  app.post('/api/notifications', authenticateToken, async (req: any, res: any) => {
     try {
       const { userId, title, message, type, read } = req.body;
       await db.insert(notifications).values({
@@ -475,7 +484,7 @@ const app = express();
     }
   });
 
-  app.put('/api/notifications/:id', authenticateTÇoken, async (req: any, res: any) => {
+  app.put('/api/notifications/:id', authenticateToken, async (req: any, res: any) => {
     try {
       await db.update(notifications).set(req.body).where(eq(notifications.id, req.params.id));
       res.json({ success: true });
@@ -485,7 +494,7 @@ const app = express();
   });
 
   // Push subscription
-  app.post('/api/push/subscribe', authenticateTÇoken, async (req: any, res: any) => {
+  app.post('/api/push/subscribe', authenticateToken, async (req: any, res: any) => {
     try {
       const { subscription } = req.body;
       await db.update(users).set({ pushSubscription: JSON.stringify(subscription) }).where(eq(users.id, req.user.uid));
@@ -496,7 +505,7 @@ const app = express();
   });
 
   // Notify endpoints
-  app.post('/api/notify/checkin', authenticateTÇoken, async (req: any, res: any) => {
+  app.post('/api/notify/checkin', authenticateToken, async (req: any, res: any) => {
     try {
       const { userId, userName, type, isRemote, remoteNote } = req.body;
       // Find managers of this user
@@ -516,7 +525,7 @@ const app = express();
     }
   });
 
-  app.post('/api/notify/approval', authenticateTÇoken, async (req: any, res: any) => {
+  app.post('/api/notify/approval', authenticateToken, async (req: any, res: any) => {
     try {
       const { targetUid, isApproved, requestType, actorName } = req.body;
       const typeLabel = requestType === 'leave' ? 'İzin' : requestType === 'overtime' ? 'Mesai' : 'Hareket';
@@ -533,7 +542,7 @@ const app = express();
     }
   });
 
-  app.post('/api/notify/newrequest', authenticateTÇoken, async (req: any, res: any) => {
+  app.post('/api/notify/newrequest', authenticateToken, async (req: any, res: any) => {
     try {
       const { userName, requestType, managerId } = req.body;
       const typeLabel = requestType === 'leave' ? 'İzin' : 'Mesai';
