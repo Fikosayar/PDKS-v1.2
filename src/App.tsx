@@ -331,13 +331,13 @@ export default function App() {
         }
       });
 
-    // u an ofiste: son hareketi 'in' olanlar
+    // şu an ofiste: son hareketi 'in' olanlar
     const presentIds = new Set<string>();
     userLastAction.forEach((type, uid) => {
       if (type === 'in') presentIds.add(uid);
     });
 
-    // Izinli bugn
+    // İzinli bugn
     const onLeaveIds = new Set<string>(
       leaveRequests.filter(r =>
         r.status === 'approved' && !r.deleted &&
@@ -345,7 +345,7 @@ export default function App() {
       ).map(r => r.userId)
     );
 
-    // Ge kalanlar: ilk giriş saati mesai bandan sonra olan kiiler (kii ba 1 kez)
+    // Geç kalanlar: ilk giriş saati mesai bandan sonra olan kiiler (kii ba 1 kez)
     let lateCount = 0;
     userFirstIn.forEach((time) => {
       if (time > shiftStart) lateCount++;
@@ -367,7 +367,7 @@ export default function App() {
     });
     const onLeaveList = [...onLeaveIds].map(uid => {
       const u = userMap.get(uid);
-      return { uid, name: u?.name || uid, detail: u?.title || 'Izinli' };
+      return { uid, name: u?.name || uid, detail: u?.title || 'İzinli' };
     });
     const lateList = [...lateIds].map(uid => {
       const u = userMap.get(uid);
@@ -2022,28 +2022,28 @@ export default function App() {
             {profile?.role === 'admin' && dashboardStats && (
               <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <button
-                  onClick={() => setDashboardStatModal({ title: 'u An Ofiste', color: 'emerald', icon: <LogIn size={18} />, people: dashboardStats.presentList })}
+                  onClick={() => setDashboardStatModal({ title: 'Şu An Ofiste', color: 'emerald', icon: <LogIn size={18} />, people: dashboardStats.presentList })}
                   className="rounded-2xl border theme-border bg-emerald-500/10 p-4 text-left hover:bg-emerald-500/20 transition-colors cursor-pointer"
                 >
                   <div className="text-2xl font-black text-emerald-500">{dashboardStats.present}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600/70">u An Ofiste</div>
-                  <div className="text-[9px] text-emerald-700/60 mt-1">Detay iin tkla</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600/70">Şu An Ofiste</div>
+                  <div className="text-[9px] text-emerald-700/60 mt-1">Detay için tıkla</div>
                 </button>
                 <button
-                  onClick={() => setDashboardStatModal({ title: 'Izinli', color: 'orange', icon: <FileText size={18} />, people: dashboardStats.onLeaveList })}
+                  onClick={() => setDashboardStatModal({ title: 'İzinli', color: 'orange', icon: <FileText size={18} />, people: dashboardStats.onLeaveList })}
                   className="rounded-2xl border theme-border bg-orange-500/10 p-4 text-left hover:bg-orange-500/20 transition-colors cursor-pointer"
                 >
                   <div className="text-2xl font-black text-orange-500">{dashboardStats.onLeave}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600/70">Izinli</div>
-                  <div className="text-[9px] text-orange-700/60 mt-1">Detay iin tkla</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600/70">İzinli</div>
+                  <div className="text-[9px] text-orange-700/60 mt-1">Detay için tıkla</div>
                 </button>
                 <button
-                  onClick={() => setDashboardStatModal({ title: 'Ge Kalan', color: 'red', icon: <Clock size={18} />, people: dashboardStats.lateList })}
+                  onClick={() => setDashboardStatModal({ title: 'Geç Kalan', color: 'red', icon: <Clock size={18} />, people: dashboardStats.lateList })}
                   className="rounded-2xl border theme-border bg-red-500/10 p-4 text-left hover:bg-red-500/20 transition-colors cursor-pointer"
                 >
                   <div className="text-2xl font-black text-red-500">{dashboardStats.late}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-red-600/70">Ge Kalan</div>
-                  <div className="text-[9px] text-red-700/60 mt-1">Detay iin tkla</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-red-600/70">Geç Kalan</div>
+                  <div className="text-[9px] text-red-700/60 mt-1">Detay için tıkla</div>
                 </button>
                 <button
                   onClick={() => setDashboardStatModal({ title: 'Gelmeyen', color: 'zinc', icon: <UserX size={18} />, people: dashboardStats.absentList })}
@@ -2051,7 +2051,7 @@ export default function App() {
                 >
                   <div className="text-2xl font-black theme-text">{dashboardStats.absent}</div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Gelmeyen</div>
-                  <div className="text-[9px] text-zinc-600 mt-1">Detay iin tkla</div>
+                  <div className="text-[9px] text-zinc-600 mt-1">Detay için tıkla</div>
                 </button>
               </div>
             )}
@@ -2072,7 +2072,7 @@ export default function App() {
               <div className="rounded-2xl border theme-border theme-bg-secondary p-4">
                 <div className="mb-2 flex items-center gap-2 text-zinc-500">
                   {isOnline ? <Wifi size={16} /> : <WifiOff size={16} className="text-amber-400" />}
-                  <span className="text-xs font-semibold uppercase tracking-wider">A Durumu</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider">Ağ Durumu</span>
                 </div>
                 <p className="text-sm font-medium theme-text">{isOnline ? (currentIp || 'Tespit ediliyor...') : 'evrimd'}</p>
                 <p className="text-[10px] text-zinc-600">Mevcut IP Adresiniz</p>
@@ -2088,9 +2088,9 @@ export default function App() {
               <div className="rounded-2xl border theme-border theme-bg-secondary p-4">
                 <div className="mb-2 flex items-center gap-2 text-zinc-500">
                   <Shield size={16} />
-                  <span className="text-xs font-semibold uppercase tracking-wider">Gvenlik</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider">Güvenlik</span>
                 </div>
-                <p className="text-sm font-medium theme-text">QR + IP Korumalııı</p>
+                <p className="text-sm font-medium theme-text">QR + IP Korumalı</p>
                 <p className="text-[10px] text-zinc-600">Sistem Durumu</p>
               </div>
             </div>
@@ -3150,7 +3150,7 @@ export default function App() {
                     </div>
 
                     <div className="space-y-4">
-                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">Gvenlik & Eriim</h4>
+                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">Güvenlik & Eriim</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="text-xs font-semibold text-zinc-500 uppercase"> Yeri IP Adresi</label>
