@@ -27,7 +27,13 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('pdks_token');
       localStorage.removeItem('pdks_user');
-      window.location.href = '/';
+      // Sadece ana sayfada değilsek yönlendir (Sonsuz döngüyü engelle)
+      if (window.location.pathname !== '/') {
+        window.location.href = '/';
+      } else {
+        // Zaten ana sayfadaysak sadece state'in güncellenmesi için bir event fırlatabiliriz
+        window.dispatchEvent(new Event('auth_error'));
+      }
     }
     return Promise.reject(error);
   }

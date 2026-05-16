@@ -6,7 +6,7 @@ export const useProfile = () => {
   return useQuery({
     queryKey: ['profile'],
     queryFn: async (): Promise<UserProfile> => { const { data } = await apiClient.get('/me'); return data as UserProfile; },
-    refetchInterval: 1000 * 60 * 5, retry: false
+    enabled: !!localStorage.getItem('pdks_token'), refetchInterval: 1000 * 60 * 5, retry: false
   });
 };
 
@@ -14,7 +14,7 @@ export const useUsers = () => {
   return useQuery({
     queryKey: ['users'],
     queryFn: async (): Promise<UserProfile[]> => { const { data } = await apiClient.get('/users'); return data as UserProfile[]; },
-    refetchInterval: 1000 * 60,
+    enabled: !!localStorage.getItem('pdks_token'), refetchInterval: 1000 * 60,
   });
 };
 
@@ -22,7 +22,7 @@ export const useLogs = () => {
   return useQuery({
     queryKey: ['logs'],
     queryFn: async (): Promise<AttendanceLog[]> => { const { data } = await apiClient.get('/logs'); return data as AttendanceLog[]; },
-    refetchInterval: 1000 * 30,
+    enabled: !!localStorage.getItem('pdks_token'), refetchInterval: 1000 * 30,
   });
 };
 
@@ -30,7 +30,7 @@ export const useSettings = () => {
   return useQuery({
     queryKey: ['settings'],
     queryFn: async (): Promise<GlobalSettings> => { const { data } = await apiClient.get('/settings'); return data as GlobalSettings; },
-    refetchInterval: 1000 * 60 * 60,
+    enabled: !!localStorage.getItem('pdks_token'), refetchInterval: 1000 * 60 * 60,
   });
 };
 
@@ -38,7 +38,7 @@ export const useNotifications = () => {
   return useQuery({
     queryKey: ['notifications'],
     queryFn: async (): Promise<SystemNotification[]> => { const { data } = await apiClient.get('/notifications'); return data as SystemNotification[]; },
-    refetchInterval: 1000 * 60,
+    enabled: !!localStorage.getItem('pdks_token'), refetchInterval: 1000 * 60,
   });
 };
 
@@ -46,7 +46,7 @@ export const useLeaveRequests = () => {
   return useQuery({
     queryKey: ['leaveRequests'],
     queryFn: async (): Promise<LeaveRequest[]> => { const { data } = await apiClient.get('/leaves'); return data as LeaveRequest[]; },
-    refetchInterval: 1000 * 60 * 2,
+    enabled: !!localStorage.getItem('pdks_token'), refetchInterval: 1000 * 60 * 2,
   });
 };
 
@@ -54,7 +54,7 @@ export const useOvertimeRequests = () => {
   return useQuery({
     queryKey: ['overtimeRequests'],
     queryFn: async (): Promise<OvertimeRequest[]> => { const { data } = await apiClient.get('/overtime'); return data as OvertimeRequest[]; },
-    refetchInterval: 1000 * 60 * 2,
+    enabled: !!localStorage.getItem('pdks_token'), refetchInterval: 1000 * 60 * 2,
   });
 };
 
@@ -157,3 +157,4 @@ export const useUserMutation = () => {
     },
   });
 };
+

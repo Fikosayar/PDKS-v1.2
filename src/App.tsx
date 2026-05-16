@@ -1,4 +1,4 @@
-ï»¿// @ts-nocheck
+// @ts-nocheck
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -133,7 +133,7 @@ export default function App() {
   const [scanType, setScanType] = useState<'in' | 'out' | null>(null);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   
-  // Status mesajlarÄ± otomatik kaybolsun
+  // Status mesajlarý otomatik kaybolsun
   useEffect(() => {
     if (!status) return;
     const timeout = status.type === 'success' ? 4000 : 6000;
@@ -174,7 +174,7 @@ export default function App() {
   useEffect(() => {
     applyTheme(theme);
     setStoredTheme(theme);
-    // Sistem temasÄ± deÄŸiÅŸince gÃ¼ncelle
+    // Sistem temasý deðiþince güncelle
     if (theme === 'system') {
       return listenSystemTheme(() => applyTheme('system'));
     }
@@ -184,11 +184,11 @@ export default function App() {
     setTheme(prev => prev === 'dark' ? 'light' : prev === 'light' ? 'system' : 'dark');
   };
 
-  // Ã‡evrimdÄ±ÅŸÄ± mod
+  // Çevrimdýþý mod
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [offlineQueueCount, setOfflineQueueCount] = useState(0);
 
-  // Nakliye (uzaktan giriÅŸ) modu
+  // Nakliye (uzaktan giriþ) modu
   const [showRemoteModal, setShowRemoteModal] = useState(false);
   const [remoteNote, setRemoteNote] = useState('');
   const [pendingScanType, setPendingScanType] = useState<'in' | 'out' | null>(null);
@@ -232,27 +232,27 @@ export default function App() {
   };
 
   const getOrCreateDeviceId = () => {
-    // 1. Ã–nce LocalStorage'a bak
+    // 1. Önce LocalStorage'a bak
     let devId = localStorage.getItem('pdks_device_id');
     
-    // 2. Yoksa Ã§erezlere (Cookie) bak (Safari bazen localStorage siler ama Ã§erezi tutar)
+    // 2. Yoksa çerezlere (Cookie) bak (Safari bazen localStorage siler ama çerezi tutar)
     if (!devId) {
       const match = document.cookie.match(new RegExp('(^| )pdks_device_id=([^;]+)'));
       if (match) devId = match[2];
     }
     
-    // 3. Ä°kisinde de yoksa sÄ±fÄ±rdan oluÅŸtur
+    // 3. Ýkisinde de yoksa sýfýrdan oluþtur
     if (!devId) {
       devId = 'dev-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     }
     
-    // Her ihtimale karÅŸÄ± ikisine birden tekrar gÃ¼Ã§lÃ¼ce kaydet
+    // Her ihtimale karþý ikisine birden tekrar güçlüce kaydet
     try {
       localStorage.setItem('pdks_device_id', devId);
-      // Ã‡erezi 10 yÄ±l geÃ§erli olacak ÅŸekilde ayarla
+      // Çerezi 10 yýl geçerli olacak þekilde ayarla
       document.cookie = `pdks_device_id=${devId}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/`;
     } catch (e) {
-      console.warn("TarayÄ±cÄ± veri kaydetmeyi engelliyor.");
+      console.warn("Tarayýcý veri kaydetmeyi engelliyor.");
     }
     
     return devId;
@@ -306,10 +306,10 @@ export default function App() {
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     const shiftStart = settings?.shiftStart || '08:00';
 
-    // Sadece aktif personel (silinmemiÅŸ)
+    // Sadece aktif personel (silinmemiþ)
     const activeUsers = allUsers.filter(u => u.role !== 'deleted');
 
-    // BugÃ¼nÃ¼n onaylÄ± loglarÄ± (pending dahil deÄŸil)
+    // Bugünün onaylý loglarý (pending dahil deðil)
     const todayLogs = logs.filter(l =>
       !l.deleted &&
       l.status !== 'pending' &&
@@ -318,9 +318,9 @@ export default function App() {
       format(l.timestamp.toDate(), 'yyyy-MM-dd') === todayStr
     );
 
-    // Her personel iÃ§in bugÃ¼nkÃ¼ en son durumu belirle (son log out mu in mi?)
+    // Her personel için bugünkü en son durumu belirle (son log out mu in mi?)
     const userLastAction = new Map<string, string>(); // userId -> 'in' | 'out'
-    const userFirstIn = new Map<string, string>();     // userId -> 'HH:mm' (ilk giriÅŸ saati)
+    const userFirstIn = new Map<string, string>();     // userId -> 'HH:mm' (ilk giriþ saati)
 
     todayLogs
       .sort((a, b) => (a.timestamp.toDate().getTime()) - (b.timestamp.toDate().getTime()))
@@ -331,13 +331,13 @@ export default function App() {
         }
       });
 
-    // Åžu an ofiste: son hareketi 'in' olanlar
+    // Þu an ofiste: son hareketi 'in' olanlar
     const presentIds = new Set<string>();
     userLastAction.forEach((type, uid) => {
       if (type === 'in') presentIds.add(uid);
     });
 
-    // Ä°zinli bugÃ¼n
+    // Ýzinli bugün
     const onLeaveIds = new Set<string>(
       leaveRequests.filter(r =>
         r.status === 'approved' && !r.deleted &&
@@ -345,13 +345,13 @@ export default function App() {
       ).map(r => r.userId)
     );
 
-    // GeÃ§ kalanlar: ilk giriÅŸ saati mesai baÅŸÄ±ndan sonra olan kiÅŸiler (kiÅŸi baÅŸÄ± 1 kez)
+    // Geç kalanlar: ilk giriþ saati mesai baþýndan sonra olan kiþiler (kiþi baþý 1 kez)
     let lateCount = 0;
     userFirstIn.forEach((time) => {
       if (time > shiftStart) lateCount++;
     });
 
-    // Gelmeyen listesi: aktif, izinli deÄŸil, bugÃ¼n hiÃ§ giriÅŸ yapmamÄ±ÅŸ
+    // Gelmeyen listesi: aktif, izinli deðil, bugün hiç giriþ yapmamýþ
     const lateIds = new Set<string>();
     userFirstIn.forEach((time, uid) => { if (time > shiftStart) lateIds.add(uid); });
     const absentUserIds = new Set<string>();
@@ -359,19 +359,19 @@ export default function App() {
       if (!presentIds.has(u.uid) && !onLeaveIds.has(u.uid)) absentUserIds.add(u.uid);
     });
 
-    // KiÅŸi listelerini de dÃ¶ndÃ¼r
+    // Kiþi listelerini de döndür
     const userMap = new Map<string, UserProfile>(activeUsers.map(u => [u.uid, u]));
     const presentList = [...presentIds].map(uid => {
       const u = userMap.get(uid);
-      return { uid, name: u?.name || uid, detail: `GiriÅŸ: ${userFirstIn.get(uid) || '-'}` };
+      return { uid, name: u?.name || uid, detail: `Giriþ: ${userFirstIn.get(uid) || '-'}` };
     });
     const onLeaveList = [...onLeaveIds].map(uid => {
       const u = userMap.get(uid);
-      return { uid, name: u?.name || uid, detail: u?.title || 'Ä°zinli' };
+      return { uid, name: u?.name || uid, detail: u?.title || 'Ýzinli' };
     });
     const lateList = [...lateIds].map(uid => {
       const u = userMap.get(uid);
-      return { uid, name: u?.name || uid, detail: `GiriÅŸ: ${userFirstIn.get(uid) || '-'}` };
+      return { uid, name: u?.name || uid, detail: `Giriþ: ${userFirstIn.get(uid) || '-'}` };
     });
     const absentList = [...absentUserIds].map(uid => {
       const u = userMap.get(uid);
@@ -398,7 +398,7 @@ export default function App() {
     
     const userLogs = logs.filter(l => l.userId === user.uid && !l.deleted && l.type === 'in');
     
-    // Her gÃ¼nÃ¼n sadece ilk giriÅŸini kontrol et
+    // Her günün sadece ilk giriþini kontrol et
     const firstInsPerDay = new Map<string, string>(); // date -> time
     userLogs.forEach(l => {
       const dateStr = format(l.timestamp?.toDate() || new Date(), 'yyyy-MM-dd');
@@ -446,9 +446,9 @@ export default function App() {
           const dateStr = current.toISOString().slice(0, 10);
           // Pazar her zaman tatil
           const isSunday = dayOfWeek === 0;
-          // 5 gÃ¼nlÃ¼k Ã§alÄ±ÅŸma dÃ¼zeninde Cumartesi de tatil
+          // 5 günlük çalýþma düzeninde Cumartesi de tatil
           const isSaturday = dayOfWeek === 6 && workDays === 5;
-          // Resmi tatil kontrolÃ¼
+          // Resmi tatil kontrolü
           const isPublicHoliday = !!getHoliday(dateStr);
           
           if (!isSunday && !isSaturday && !isPublicHoliday) {
@@ -519,10 +519,10 @@ export default function App() {
 
   // Settings listener
   // [Migrated to React Query] Firebase listener removed
-   // Logs listener â€” Admin: tÃ¼m veriler | Personel/Manager: kendi verisi
+   // Logs listener — Admin: tüm veriler | Personel/Manager: kendi verisi
   // [Migrated to React Query] Firebase listener removed
 
-  // Ekip logs listener â€” Sadece yÃ¶neticiler iÃ§in (altÄ±ndaki personelin hareketleri)
+  // Ekip logs listener — Sadece yöneticiler için (altýndaki personelin hareketleri)
   // [Migrated to React Query] Firebase listener removed
 
   // Users listener (Admin and Managers)
@@ -532,11 +532,11 @@ export default function App() {
   // Notifications listener
   // [Migrated to React Query] Firebase listener removed
 
-  // Ä°nternet baÄŸlantÄ± takibi
+  // Ýnternet baðlantý takibi
   useEffect(() => {
     const handleOnline = async () => {
       setIsOnline(true);
-      // Ä°nternet gelince Ã§evrimdÄ±ÅŸÄ± kuyruÄŸu senkronize et
+      // Ýnternet gelince çevrimdýþý kuyruðu senkronize et
       await syncOfflineQueueToFirebase();
     };
     const handleOffline = () => setIsOnline(false);
@@ -548,7 +548,7 @@ export default function App() {
     };
   }, [user, profile]);
 
-  // SW mesajlarÄ±nÄ± dinle (bildirim tÄ±klamasÄ± yÃ¶nlendirmesi)
+  // SW mesajlarýný dinle (bildirim týklamasý yönlendirmesi)
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
     const handler = (event: MessageEvent) => {
@@ -563,7 +563,7 @@ export default function App() {
     return () => navigator.serviceWorker.removeEventListener('message', handler);
   }, [user, profile]);
 
-  // KullanÄ±cÄ± giriÅŸ yaptÄ±ktan sonra push aboneliÄŸi kur
+  // Kullanýcý giriþ yaptýktan sonra push aboneliði kur
   useEffect(() => {
     if (!user) return;
     const setupPush = async () => {
@@ -572,7 +572,7 @@ export default function App() {
         const sub = await subscribeToPush();
         if (sub) {
           setPushEnabled(true);
-          // AboneliÄŸi sunucuya kaydet
+          // Aboneliði sunucuya kaydet
           await fetch('/api/push/subscribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -584,7 +584,7 @@ export default function App() {
     setupPush();
   }, [user]);
 
-  // Ã‡evrimdÄ±ÅŸÄ± kuyruk sayÄ±sÄ±nÄ± gÃ¼ncelle
+  // Çevrimdýþý kuyruk sayýsýný güncelle
   useEffect(() => {
     getOfflineQueue().then(q => setOfflineQueueCount(q.length));
   }, [user]);
@@ -598,7 +598,7 @@ export default function App() {
       console.error("Mark read error:", e);
     }
   };
-  // Ã‡evrimdÄ±ÅŸÄ± kuyruÄŸu Firebase'e senkronize et
+  // Çevrimdýþý kuyruðu Firebase'e senkronize et
   const syncOfflineQueueToFirebase = useCallback(async () => {
     if (!user || !profile) return;
     const queue = await getOfflineQueue();
@@ -617,12 +617,12 @@ export default function App() {
         await removeFromOfflineQueue(item.id);
         syncedCount++;
       } catch (err) {
-        console.error('Ã‡evrimdÄ±ÅŸÄ± kayÄ±t senkronize edilemedi:', err);
+        console.error('Çevrimdýþý kayýt senkronize edilemedi:', err);
       }
     }
     if (syncedCount > 0) {
       setOfflineQueueCount(0);
-      setStatus({ type: 'success', message: `${syncedCount} Ã§evrimdÄ±ÅŸÄ± hareket baÅŸarÄ±yla senkronize edildi!` });
+      setStatus({ type: 'success', message: `${syncedCount} çevrimdýþý hareket baþarýyla senkronize edildi!` });
     }
   }, [user, profile]);
 
@@ -630,7 +630,7 @@ export default function App() {
 
   // [Migrated to React Query] Firebase listener removed
 
-  // Overtime Requests listener â€” or() yerine ayrÄ± query'ler (index gerektirmez)
+  // Overtime Requests listener — or() yerine ayrý query'ler (index gerektirmez)
   // [Migrated to React Query] Firebase listener removed
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -659,7 +659,7 @@ export default function App() {
       } else {
         const text = await response.text();
         console.error("Non-JSON response received:", text);
-        throw new Error("Sunucudan geÃ§ersiz yanÄ±t alÄ±ndÄ±. LÃ¼tfen tekrar deneyin.");
+        throw new Error("Sunucudan geçersiz yanýt alýndý. Lütfen tekrar deneyin.");
       }
 
       if (response.ok && data.success !== false) {
@@ -679,14 +679,14 @@ export default function App() {
                 <ShieldAlert size={16} /> {data.error}
               </p>
               <div className="space-y-1">
-                <p className="text-[10px] text-zinc-500 uppercase font-bold">Mevcut CihazÄ±nÄ±z:</p>
+                <p className="text-[10px] text-zinc-500 uppercase font-bold">Mevcut Cihazýnýz:</p>
                 <div className="relative">
                   <p className="text-[11px] text-zinc-300 bg-zinc-900 p-2 rounded border border-zinc-800 break-all font-mono pr-8">{data.currentDevice}</p>
                   <button 
                     type="button"
                     onClick={() => {
                       navigator.clipboard.writeText(data.currentDevice);
-                      setStatus({ type: 'success', message: 'Cihaz bilgisi kopyalandÄ±.' });
+                      setStatus({ type: 'success', message: 'Cihaz bilgisi kopyalandý.' });
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
                     title="Kopyala"
@@ -697,17 +697,17 @@ export default function App() {
               </div>
               {data.allowedDevice && (
                 <div className="space-y-1">
-                  <p className="text-[10px] text-zinc-500 uppercase font-bold">KayÄ±tlÄ± OlmasÄ± Gereken:</p>
+                  <p className="text-[10px] text-zinc-500 uppercase font-bold">Kayýtlý Olmasý Gereken:</p>
                   <p className="text-[11px] text-orange-500 bg-orange-500/5 p-2 rounded border border-orange-500/20 font-mono">{data.allowedDevice}</p>
                 </div>
               )}
               <p className="text-[10px] text-zinc-500 italic">
-                LÃ¼tfen yÃ¶neticinizden cihaz bilginizi gÃ¼ncellemesini isteyin.
+                Lütfen yöneticinizden cihaz bilginizi güncellemesini isteyin.
               </p>
             </div>
           );
         } else {
-          setLoginError(data.error || 'GiriÅŸ baÅŸarÄ±sÄ±z.');
+          setLoginError(data.error || 'Giriþ baþarýsýz.');
         }
       }
     } catch (error: any) {
@@ -716,8 +716,8 @@ export default function App() {
         <div className="flex flex-col items-center gap-2 justify-center text-center p-2">
           <AlertCircle size={20} className="text-red-500" />
           <div className="space-y-1">
-            <p className="font-bold">GiriÅŸ HatasÄ±</p>
-            <p className="text-[10px] opacity-80">{error?.message || 'Sistem hatasÄ±. LÃ¼tfen internet baÄŸlantÄ±nÄ±zÄ± kontrol edin.'}</p>
+            <p className="font-bold">Giriþ Hatasý</p>
+            <p className="text-[10px] opacity-80">{error?.message || 'Sistem hatasý. Lütfen internet baðlantýnýzý kontrol edin.'}</p>
           </div>
         </div>
       );
@@ -761,20 +761,20 @@ export default function App() {
       const data = await response.json();
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Yeni personel baÅŸarÄ±yla eklendi.' });
+        setStatus({ type: 'success', message: 'Yeni personel baþarýyla eklendi.' });
         (e.target as HTMLFormElement).reset();
       } else {
-        setStatus({ type: 'error', message: data.error || 'Personel eklenirken hata oluÅŸtu.' });
+        setStatus({ type: 'error', message: data.error || 'Personel eklenirken hata oluþtu.' });
       }
     } catch (error) {
-      setStatus({ type: 'error', message: 'Sistem hatasÄ±.' });
+      setStatus({ type: 'error', message: 'Sistem hatasý.' });
     }
   };
 
   const handlePrintQR = () => {
     const qrElement = document.getElementById('qr-code-svg');
     if (!qrElement) {
-      setStatus({ type: 'error', message: 'QR kod bulunamadÄ±.' });
+      setStatus({ type: 'error', message: 'QR kod bulunamadý.' });
       return;
     }
 
@@ -785,7 +785,7 @@ export default function App() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>PDKS QR Kod YazdÄ±r</title>
+          <title>PDKS QR Kod Yazdýr</title>
           <style>
             body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; margin: 0; }
             .container { text-align: center; border: 4px solid #f97316; padding: 60px; border-radius: 40px; background: #fff; }
@@ -796,9 +796,9 @@ export default function App() {
         </head>
         <body>
           <div class="container">
-            <h1>PDKS GiriÅŸ/Ã‡Ä±kÄ±ÅŸ QR Kodu</h1>
+            <h1>PDKS Giriþ/Çýkýþ QR Kodu</h1>
             ${qrSvg}
-            <p>LÃ¼tfen giriÅŸ ve Ã§Ä±kÄ±ÅŸlarda bu kodu okutunuz.</p>
+            <p>Lütfen giriþ ve çýkýþlarda bu kodu okutunuz.</p>
           </div>
           <script>
             window.onload = () => { 
@@ -819,30 +819,30 @@ export default function App() {
     const newSecret = `PDKS-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     try {
       await settingsMutation.mutateAsync({ ...settings, qrSecret: newSecret });
-      setStatus({ type: 'success', message: 'QR kod baÅŸarÄ±yla gÃ¼ncellendi.' });
+      setStatus({ type: 'success', message: 'QR kod baþarýyla güncellendi.' });
     } catch (error) {
-      setStatus({ type: 'error', message: 'QR kod gÃ¼ncellenirken hata oluÅŸtu.' });
+      setStatus({ type: 'error', message: 'QR kod güncellenirken hata oluþtu.' });
     }
   };
 
   const isProcessingScan = React.useRef(false);
   const lastScanTimestamp = React.useRef<number>(0);
-  const SCAN_COOLDOWN_MS = 60000; // 1 dakika mÃ¼kerrer koruma
+  const SCAN_COOLDOWN_MS = 60000; // 1 dakika mükerrer koruma
 
   const handleScanSuccess = async (decodedText: string) => {
     if (!settings || !user || !profile || !scanType || isProcessingScan.current) return;
     
-    // MÃ¼kerrer okutma korumasÄ±: Son 1 dakika iÃ§inde aynÄ± iÅŸlem yapÄ±ldÄ±ysa engelle
+    // Mükerrer okutma korumasý: Son 1 dakika içinde ayný iþlem yapýldýysa engelle
     const now = Date.now();
     if (now - lastScanTimestamp.current < SCAN_COOLDOWN_MS) {
       const kalanSaniye = Math.ceil((SCAN_COOLDOWN_MS - (now - lastScanTimestamp.current)) / 1000);
-      setStatus({ type: 'error', message: `Ã‡ok hÄ±zlÄ± okutma! LÃ¼tfen ${kalanSaniye} saniye bekleyin.` });
+      setStatus({ type: 'error', message: `Çok hýzlý okutma! Lütfen ${kalanSaniye} saniye bekleyin.` });
       setShowScanner(false);
       return;
     }
     
     isProcessingScan.current = true;
-    // Scanner'Ä± hemen kapat ki Ã§ift okutma olmasÄ±n
+    // Scanner'ý hemen kapat ki çift okutma olmasýn
     setShowScanner(false);
     
     try {
@@ -855,14 +855,14 @@ export default function App() {
           type: scanType,
           ipAddress: currentIp,
           status: 'error',
-          errorMessage: 'GeÃ§ersiz QR Kod Okutuldu'
+          errorMessage: 'Geçersiz QR Kod Okutuldu'
         } });
-        setStatus({ type: 'error', message: 'GeÃ§ersiz QR kod. LÃ¼tfen iÅŸ yerindeki gÃ¼ncel kodu okutun.' });
+        setStatus({ type: 'error', message: 'Geçersiz QR kod. Lütfen iþ yerindeki güncel kodu okutun.' });
         isProcessingScan.current = false;
         return;
       }
 
-      // 2. IP Check (Nakliye yetkisi olan personel iÃ§in IP kontrolÃ¼ atla)
+      // 2. IP Check (Nakliye yetkisi olan personel için IP kontrolü atla)
       const hasRemotePermission = profile.canRemoteCheckIn === true;
       if (settings.officeIp && currentIp !== settings.officeIp && !hasRemotePermission) {
         await attendanceMutation.mutateAsync({ method: 'POST', payload: {
@@ -872,14 +872,14 @@ export default function App() {
           type: scanType,
           ipAddress: currentIp,
           status: 'error',
-          errorMessage: 'HatalÄ± IP / AÄŸ EriÅŸimi Denemesi'
+          errorMessage: 'Hatalý IP / Að Eriþimi Denemesi'
         } });
-        setStatus({ type: 'error', message: `HatalÄ± aÄŸ. Sadece iÅŸ yeri Wi-Fi aÄŸÄ±na baÄŸlÄ±yken iÅŸlem yapabilirsiniz. (Mevcut IP: ${currentIp})` });
+        setStatus({ type: 'error', message: `Hatalý að. Sadece iþ yeri Wi-Fi aðýna baðlýyken iþlem yapabilirsiniz. (Mevcut IP: ${currentIp})` });
         isProcessingScan.current = false;
         return;
       }
 
-      // 3. Nakliye modunda mÄ±sÄ±n?
+      // 3. Nakliye modunda mýsýn?
       const isRemote = hasRemotePermission && settings.officeIp && currentIp !== settings.officeIp;
 
       // 4. Konum al
@@ -907,7 +907,7 @@ export default function App() {
         remoteNote: isRemote ? (remoteNote || '') : null,
       };
 
-      // 5. Ã‡evrimdÄ±ÅŸÄ± ise kuyruÄŸa al, online ise direkt yaz
+      // 5. Çevrimdýþý ise kuyruða al, online ise direkt yaz
       if (!isOnline) {
         const queueItem: OfflineQueueItem = {
           id: `offline-${Date.now()}-${Math.random().toString(36).substring(2)}`,
@@ -918,7 +918,7 @@ export default function App() {
         await addToOfflineQueue(queueItem);
         const newCount = (await getOfflineQueue()).length;
         setOfflineQueueCount(newCount);
-        setStatus({ type: 'success', message: `ðŸ“µ Ä°nternetsiz mod: ${scanType === 'in' ? 'GiriÅŸ' : 'Ã‡Ä±kÄ±ÅŸ'} kaydedildi, internet gelince senkronize edilecek.` });
+        setStatus({ type: 'success', message: `?? Ýnternetsiz mod: ${scanType === 'in' ? 'Giriþ' : 'Çýkýþ'} kaydedildi, internet gelince senkronize edilecek.` });
       } else {
         const clientNow = new Date();
         // Firestore'a yaz
@@ -927,7 +927,7 @@ export default function App() {
           timestamp: new Date().toISOString(),
         } });
 
-        // OPTÄ°MÄ°STÄ°K UI: Snapshot beklemeden anÄ±nda state'e ekle
+        // OPTÝMÝSTÝK UI: Snapshot beklemeden anýnda state'e ekle
         const optimisticLog: AttendanceLog = {
           id: newDocRef.id,
           ...logPayload,
@@ -940,7 +940,7 @@ export default function App() {
           await checkAndCreateAutoOvertime(user.uid, profile.name, clientNow, 'out');
         }
 
-        // YÃ¶neticiye giriÅŸ bildirimi gÃ¶nder
+        // Yöneticiye giriþ bildirimi gönder
         fetch('/api/notify/checkin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -953,17 +953,17 @@ export default function App() {
           })
         }).catch(() => {});
 
-        setStatus({ type: 'success', message: `${isRemote ? 'ðŸš› Nakliye: ' : ''}${scanType === 'in' ? 'GiriÅŸ' : 'Ã‡Ä±kÄ±ÅŸ'} iÅŸleminiz baÅŸarÄ±yla kaydedildi.` });
+        setStatus({ type: 'success', message: `${isRemote ? '?? Nakliye: ' : ''}${scanType === 'in' ? 'Giriþ' : 'Çýkýþ'} iþleminiz baþarýyla kaydedildi.` });
       }
 
 
-      // MÃ¼kerrer koruma: Son baÅŸarÄ±lÄ± okutma zamanÄ±nÄ± kaydet
+      // Mükerrer koruma: Son baþarýlý okutma zamanýný kaydet
       lastScanTimestamp.current = Date.now();
       setRemoteNote('');
       setScanType(null);
     } catch (error) {
       console.error("Save log error:", error);
-      setStatus({ type: 'error', message: 'Ä°ÅŸlem kaydedilirken bir hata oluÅŸtu.' });
+      setStatus({ type: 'error', message: 'Ýþlem kaydedilirken bir hata oluþtu.' });
     } finally {
       isProcessingScan.current = false;
     }
@@ -1002,16 +1002,16 @@ export default function App() {
 
     try {
       await settingsMutation.mutateAsync(newSettings);
-      setStatus({ type: 'success', message: 'Ayarlar gÃ¼ncellendi.' });
+      setStatus({ type: 'success', message: 'Ayarlar güncellendi.' });
     } catch (error) {
-      setStatus({ type: 'error', message: 'Ayarlar gÃ¼ncellenirken hata oluÅŸtu.' });
+      setStatus({ type: 'error', message: 'Ayarlar güncellenirken hata oluþtu.' });
     }
   };
 
   const exportToExcel = (personnelUid: string, monthStr: string) => {
     const personnel = allUsers.find(u => u.uid === personnelUid);
     if (!personnel || !settings) {
-      setStatus({ type: 'error', message: 'Personel veya ayar bilgisi bulunamadÄ±.' });
+      setStatus({ type: 'error', message: 'Personel veya ayar bilgisi bulunamadý.' });
       return;
     }
 
@@ -1046,11 +1046,11 @@ export default function App() {
         
         dayData.push({
           'Tarih': format(date, 'd MMM yyyy, EEE', { locale: tr }),
-          'GiriÅŸ': leave ? leave.type.toUpperCase() : 'HAREKET YOK',
-          'Ã‡Ä±kÄ±ÅŸ': '-',
-          'BÃ¼rÃ¼t SÃ¼re (Saat)': '0',
+          'Giriþ': leave ? leave.type.toUpperCase() : 'HAREKET YOK',
+          'Çýkýþ': '-',
+          'Bürüt Süre (Saat)': '0',
           'Mola (Saat)': '0',
-          'Net Ã‡alÄ±ÅŸma (Saat)': '0',
+          'Net Çalýþma (Saat)': '0',
           'Fazla Mesai (Saat)': '0',
           'Hafta Tatili Mesaisi (Saat)': '0'
         });
@@ -1108,11 +1108,11 @@ export default function App() {
 
       dayData.push({
         'Tarih': format(date, 'd MMM yyyy, EEE', { locale: tr }),
-        'GiriÅŸ': format(entry, 'HH:mm'),
-        'Ã‡Ä±kÄ±ÅŸ': format(exit, 'HH:mm') + (format(exit, 'yyyy-MM-dd') !== dateStr ? ` (+1)` : ''),
-        'BÃ¼rÃ¼t SÃ¼re (Saat)': rawDuration.toFixed(2),
+        'Giriþ': format(entry, 'HH:mm'),
+        'Çýkýþ': format(exit, 'HH:mm') + (format(exit, 'yyyy-MM-dd') !== dateStr ? ` (+1)` : ''),
+        'Bürüt Süre (Saat)': rawDuration.toFixed(2),
         'Mola (Saat)': breakTime.toFixed(2),
-        'Net Ã‡alÄ±ÅŸma (Saat)': normalWork.toFixed(2),
+        'Net Çalýþma (Saat)': normalWork.toFixed(2),
         'Fazla Mesai (Saat)': overtime.toFixed(2),
         'Hafta Tatili Mesaisi (Saat)': weekendWork.toFixed(2)
       });
@@ -1126,30 +1126,30 @@ export default function App() {
 
   const handleManualLog = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TargetId: aÃ§Ä±k modaldan, seÃ§ili personelden veya mevcut log'dan al
+    // TargetId: açýk modaldan, seçili personelden veya mevcut log'dan al
     const targetId = selectedDayDetails?.userId || selectedPersonnelId || editingLog?.userId || user?.uid;
     
 
     
     if (!targetId || !profile) {
-      setStatus({ type: 'error', message: 'Hedef kullanÄ±cÄ± veya profil bilgisi eksik.' });
+      setStatus({ type: 'error', message: 'Hedef kullanýcý veya profil bilgisi eksik.' });
       return;
     }
 
-    // Hedef kullanÄ±cÄ±yÄ± bul: allUsers'da, kendi profilinde veya log'daki userName ile
+    // Hedef kullanýcýyý bul: allUsers'da, kendi profilinde veya log'daki userName ile
     const targetUser: UserProfile | null = 
       allUsers.find(u => u.uid === targetId) || 
       (profile.uid === targetId ? profile : null);
     
     if (!targetUser) {
-      setStatus({ type: 'error', message: 'KullanÄ±cÄ± bulunamadÄ±. LÃ¼tfen sayfayÄ± yenileyip tekrar deneyin.' });
+      setStatus({ type: 'error', message: 'Kullanýcý bulunamadý. Lütfen sayfayý yenileyip tekrar deneyin.' });
       return;
     }
 
-    // Yetki kurallarÄ±:
-    // - 'admin' rolÃ¼: herkese yapabilir
+    // Yetki kurallarý:
+    // - 'admin' rolü: herkese yapabilir
     // - 'mudur' / 'takim_lideri': sadece managerId'si kendi uid'i olan personele
-    // - DiÄŸer roller: sadece kendi kaydÄ±na
+    // - Diðer roller: sadece kendi kaydýna
     const isSystemAdmin = profile.role === 'admin';
     const isManagerOf = targetUser.managerId === profile.uid;
     const isSelf = profile.uid === targetId;
@@ -1157,13 +1157,13 @@ export default function App() {
     const isAuthorized = isSystemAdmin || isManagerOf || isSelf;
 
     if (!isAuthorized) {
-      setStatus({ type: 'error', message: 'Bu personelin kaydÄ±nÄ± dÃ¼zenleme yetkiniz yok.' });
+      setStatus({ type: 'error', message: 'Bu personelin kaydýný düzenleme yetkiniz yok.' });
       return;
     }
 
     const timestamp = new Date(`${manualLogDate}T${manualLogTime}:00`);
     if (isNaN(timestamp.getTime())) {
-      setStatus({ type: 'error', message: 'GeÃ§ersiz tarih veya saat.' });
+      setStatus({ type: 'error', message: 'Geçersiz tarih veya saat.' });
       return;
     }
     const auditInfo = `Manuel: ${profile.name}`;
@@ -1173,7 +1173,7 @@ export default function App() {
       const newStatus = isAdminOrManager ? 'success' : 'pending';
 
       if (editingLog?.id) {
-        // Mevcut kaydÄ± gÃ¼ncelle
+        // Mevcut kaydý güncelle
         await attendanceMutation.mutateAsync({ method: 'PUT', id: editingLog.id, payload: {
           timestamp: timestamp,
           type: manualLogType,
@@ -1181,9 +1181,9 @@ export default function App() {
           status: newStatus,
           ...(isAdminOrManager ? { manualEntry: true, isRemote: false, remoteNote: null } : {}),
         } });
-        setStatus({ type: 'success', message: 'KayÄ±t gÃ¼ncellendi.' });
+        setStatus({ type: 'success', message: 'Kayýt güncellendi.' });
       } else {
-        // Yeni kayÄ±t ekle
+        // Yeni kayýt ekle
         await attendanceMutation.mutateAsync({ method: 'POST', payload: {
           userId: targetId,
           userName: targetUser.name,
@@ -1193,20 +1193,20 @@ export default function App() {
           status: newStatus,
           manualEntry: true,
           isRemote: !isAdminOrManager,
-          ...(isAdminOrManager ? {} : { remoteNote: 'GeÃ§miÅŸ KayÄ±t (Onay Bekliyor)' }),
+          ...(isAdminOrManager ? {} : { remoteNote: 'Geçmiþ Kayýt (Onay Bekliyor)' }),
         } });
-        setStatus({ type: 'success', message: isAdminOrManager ? 'KayÄ±t eklendi.' : 'KayÄ±t eklendi, yÃ¶netici onayÄ± bekleniyor.' });
+        setStatus({ type: 'success', message: isAdminOrManager ? 'Kayýt eklendi.' : 'Kayýt eklendi, yönetici onayý bekleniyor.' });
         
         if (!isAdminOrManager) {
           fetch('/api/notify/checkin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.uid, userName: profile.name, type: manualLogType, isRemote: true, remoteNote: 'GeÃ§miÅŸ Manuel KayÄ±t Eklendi' })
+            body: JSON.stringify({ userId: user.uid, userName: profile.name, type: manualLogType, isRemote: true, remoteNote: 'Geçmiþ Manuel Kayýt Eklendi' })
           }).catch(() => {});
         }
       }
       
-      // Ã‡Ä±kÄ±ÅŸ ise otomatik mesai kontrolÃ¼
+      // Çýkýþ ise otomatik mesai kontrolü
       if (manualLogType === 'out') {
         await checkAndCreateAutoOvertime(targetId, targetUser.name, timestamp, 'out');
       }
@@ -1215,7 +1215,7 @@ export default function App() {
       setEditingLog(null);
     } catch (error: any) {
       console.error('Manual log error:', error);
-      setStatus({ type: 'error', message: `KayÄ±t baÅŸarÄ±sÄ±z: ${error?.message || error?.code || 'Bilinmeyen hata'}` });
+      setStatus({ type: 'error', message: `Kayýt baþarýsýz: ${error?.message || error?.code || 'Bilinmeyen hata'}` });
     }
   };
 
@@ -1228,16 +1228,16 @@ export default function App() {
       });
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'KayÄ±t baÅŸarÄ±yla silindi.' });
+        setStatus({ type: 'success', message: 'Kayýt baþarýyla silindi.' });
         setDeletingLog(null);
         setShowManualLogModal(false);
       } else {
         const data = await response.json();
-        setStatus({ type: 'error', message: data.error || 'KayÄ±t silinirken hata oluÅŸtu.' });
+        setStatus({ type: 'error', message: data.error || 'Kayýt silinirken hata oluþtu.' });
       }
     } catch (error) {
       console.error("Delete log error:", error);
-      setStatus({ type: 'error', message: 'KayÄ±t silinirken sistem hatasÄ± oluÅŸtu.' });
+      setStatus({ type: 'error', message: 'Kayýt silinirken sistem hatasý oluþtu.' });
     }
   };
 
@@ -1261,7 +1261,7 @@ export default function App() {
       if (existing) return;
 
       const targetUser = allUsers.find(u => u.uid === userId);
-      // managerId yoksa admin'e yÃ¶nlendir (personele manager atanmamÄ±ÅŸ olabilir)
+      // managerId yoksa admin'e yönlendir (personele manager atanmamýþ olabilir)
       const effectiveManagerId = targetUser?.managerId || 'admin_initial';
 
       // Calculate hours from standard shift end
@@ -1271,7 +1271,7 @@ export default function App() {
       if (overtimeHours <= 0) return;
 
       try {
-        await overtimeMutation.mutateAsync({ method: 'POST', payload: { userName, managerId: effectiveManagerId, date: dateStr, hours: overtimeHours, description: 'Otomatik Sistem KaydÄ± (' + format(timestamp, 'HH:mm') + ' Ã§Ä±kÄ±ÅŸ)', status: 'pending' } });
+        await overtimeMutation.mutateAsync({ method: 'POST', payload: { userName, managerId: effectiveManagerId, date: dateStr, hours: overtimeHours, description: 'Otomatik Sistem Kaydý (' + format(timestamp, 'HH:mm') + ' çýkýþ)', status: 'pending' } });
       } catch (error) {
         console.error("Auto overtime error:", error);
       }
@@ -1283,11 +1283,11 @@ export default function App() {
     
     try {
       await userMutation.mutateAsync({ method: 'DELETE', id: uid }); 
-      setStatus({ type: 'success', message: 'Personel kaydÄ± pasif hale getirildi.' });
+      setStatus({ type: 'success', message: 'Personel kaydý pasif hale getirildi.' });
       setDeletingUser(null);
     } catch (error) {
       console.error("Delete user error:", error);
-      setStatus({ type: 'error', message: 'Personel silinirken hata oluÅŸtu.' });
+      setStatus({ type: 'error', message: 'Personel silinirken hata oluþtu.' });
     }
   };
 
@@ -1302,12 +1302,12 @@ export default function App() {
     const reason = (formData.get('reason') as string).trim();
 
     if (!reason) {
-      setStatus({ type: 'error', message: 'LÃ¼tfen bir aÃ§Ä±klama giriniz.' });
+      setStatus({ type: 'error', message: 'Lütfen bir açýklama giriniz.' });
       return;
     }
 
     if (isNaN(days) || days <= 0) {
-      setStatus({ type: 'error', message: 'LÃ¼tfen geÃ§erli bir gÃ¼n sayÄ±sÄ± giriniz.' });
+      setStatus({ type: 'error', message: 'Lütfen geçerli bir gün sayýsý giriniz.' });
       return;
     }
 
@@ -1321,7 +1321,7 @@ export default function App() {
       let attachmentUrl = '';
       if (reportFile) {
         if (reportFile.size > 800 * 1024) {
-          setStatus({ type: 'error', message: 'Dosya boyutu Ã§ok bÃ¼yÃ¼k. LÃ¼tfen 800 KB altÄ±nda bir dosya seÃ§in veya resmi kÄ±rpÄ±n.' });
+          setStatus({ type: 'error', message: 'Dosya boyutu çok büyük. Lütfen 800 KB altýnda bir dosya seçin veya resmi kýrpýn.' });
           setUploading(false);
           return;
         }
@@ -1329,7 +1329,7 @@ export default function App() {
         attachmentUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error('Dosya okunamadÄ±.'));
+          reader.onerror = () => reject(new Error('Dosya okunamadý.'));
           reader.readAsDataURL(reportFile);
         });
       }
@@ -1342,7 +1342,7 @@ export default function App() {
         attachmentUrl,
         status: 'pending'
       } });
-      // YÃ¶neticiye push bildirimi gÃ¶nder
+      // Yöneticiye push bildirimi gönder
       fetch('/api/notify/newrequest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1353,7 +1353,7 @@ export default function App() {
           managerId: profile.managerId || 'admin_initial'
         })
       }).catch(() => {});
-      setStatus({ type: 'success', message: leaveType === 'report' ? 'Raporunuz iletildi.' : 'Ä°zin talebiniz iletildi.' });
+      setStatus({ type: 'success', message: leaveType === 'report' ? 'Raporunuz iletildi.' : 'Ýzin talebiniz iletildi.' });
       (e.target as HTMLFormElement).reset();
       setLeaveStartDate('');
       setLeaveEndDate('');
@@ -1362,8 +1362,8 @@ export default function App() {
       setLeaveType('annual');
     } catch (error: any) {
       console.error("Leave request error:", error);
-      const msg = error?.message || 'Bilinmeyen bir hata oluÅŸtu.';
-      setStatus({ type: 'error', message: `Talep iletilirken hata oluÅŸtu: ${msg}` });
+      const msg = error?.message || 'Bilinmeyen bir hata oluþtu.';
+      setStatus({ type: 'error', message: `Talep iletilirken hata oluþtu: ${msg}` });
     } finally {
       setUploading(false);
     }
@@ -1393,7 +1393,7 @@ export default function App() {
       setTimeout(() => URL.revokeObjectURL(url), 100);
     } catch (e) {
       console.error(e);
-      setStatus({ type: 'error', message: 'Dosya indirilirken hata oluÅŸtu.' });
+      setStatus({ type: 'error', message: 'Dosya indirilirken hata oluþtu.' });
     }
   };
   const submitOvertimeRequest = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -1406,13 +1406,13 @@ export default function App() {
     const description = formData.get('description') as string;
 
     if (isNaN(hours) || hours <= 0) {
-      setStatus({ type: 'error', message: 'LÃ¼tfen geÃ§erli bir saat giriniz.' });
+      setStatus({ type: 'error', message: 'Lütfen geçerli bir saat giriniz.' });
       return;
     }
 
     try {
       await overtimeMutation.mutateAsync({ method: 'POST', payload: { userName: profile.name, managerId: profile.managerId || 'admin_initial', date, hours, description, status: 'pending' } });
-      // YÃ¶neticiye push bildirimi gÃ¶nder
+      // Yöneticiye push bildirimi gönder
       fetch('/api/notify/newrequest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1428,7 +1428,7 @@ export default function App() {
       setOvertimeEndTime('');
       setCalcOvertimeHours(0);
     } catch (error) {
-      setStatus({ type: 'error', message: 'Talep iletilirken hata oluÅŸtu.' });
+      setStatus({ type: 'error', message: 'Talep iletilirken hata oluþtu.' });
     }
   };
 
@@ -1436,7 +1436,7 @@ export default function App() {
     try {
       
 
-      // Push bildirimi gÃ¶nder (arka planda, hata olsa bile devam)
+      // Push bildirimi gönder (arka planda, hata olsa bile devam)
       fetch('/api/notify/approval', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1444,13 +1444,13 @@ export default function App() {
           targetUid: requestData.userId,
           isApproved: action === 'approved',
           requestType: collectionName === 'leaveRequests' ? 'leave' : collectionName === 'attendance' ? 'manual' : 'overtime',
-          actorName: profile?.name || 'YÃ¶netici'
+          actorName: profile?.name || 'Yönetici'
         })
       }).catch(() => {});
 
-      setStatus({ type: 'success', message: `Talep ${action === 'approved' ? 'onaylandÄ±' : 'reddedildi'}.` });
+      setStatus({ type: 'success', message: `Talep ${action === 'approved' ? 'onaylandý' : 'reddedildi'}.` });
     } catch (error) {
-      setStatus({ type: 'error', message: 'Ä°ÅŸlem sÄ±rasÄ±nda hata oluÅŸtu.' });
+      setStatus({ type: 'error', message: 'Ýþlem sýrasýnda hata oluþtu.' });
     }
   };
 
@@ -1485,19 +1485,19 @@ export default function App() {
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pdks_token') },
         body: JSON.stringify({
           userId: deletingLeave.userId,
-          title: 'Ä°zin Ä°ptali',
-          message: deletingLeave.startDate + ' tarihindeki izniniz yÃ¶netici tarafÄ±ndan iptal edildi. Neden: ' + reason,
+          title: 'Ýzin Ýptali',
+          message: deletingLeave.startDate + ' tarihindeki izniniz yönetici tarafýndan iptal edildi. Neden: ' + reason,
           type: 'error',
           read: false
         })
       }).catch(() => {});
 
-      setStatus({ type: 'success', message: 'Ä°zin talebi silindi ve bakiye iade edildi.' });
+      setStatus({ type: 'success', message: 'Ýzin talebi silindi ve bakiye iade edildi.' });
       setDeletingLeave(null);
       setDeletionReason('');
     } catch (error) {
       console.error("Delete error:", error);
-      setStatus({ type: 'error', message: 'Ä°zin silinirken hata oluÅŸtu.' });
+      setStatus({ type: 'error', message: 'Ýzin silinirken hata oluþtu.' });
     }
   };
 
@@ -1515,10 +1515,10 @@ export default function App() {
 
     try {
       await leaveMutation.mutateAsync({ method: 'PUT', id: editingLeave.id!, payload: updates });
-      setStatus({ type: 'success', message: 'Ä°zin talebi gÃ¼ncellendi.' });
+      setStatus({ type: 'success', message: 'Ýzin talebi güncellendi.' });
       setEditingLeave(null);
     } catch (error) {
-      setStatus({ type: 'error', message: 'GÃ¼ncelleme sÄ±rasÄ±nda hata oluÅŸtu.' });
+      setStatus({ type: 'error', message: 'Güncelleme sýrasýnda hata oluþtu.' });
     }
   };
 
@@ -1555,15 +1555,15 @@ export default function App() {
       });
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Personel bilgileri gÃ¼ncellendi.' });
+        setStatus({ type: 'success', message: 'Personel bilgileri güncellendi.' });
         setEditingUser(null);
       } else {
         const data = await response.json();
-        setStatus({ type: 'error', message: data.error || 'GÃ¼ncelleme sÄ±rasÄ±nda hata oluÅŸtu.' });
+        setStatus({ type: 'error', message: data.error || 'Güncelleme sýrasýnda hata oluþtu.' });
       }
     } catch (error) {
       console.error("Update user error:", error);
-      setStatus({ type: 'error', message: 'Sistem hatasÄ±.' });
+      setStatus({ type: 'error', message: 'Sistem hatasý.' });
     }
   };
 
@@ -1583,20 +1583,20 @@ export default function App() {
       });
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Åžifreniz baÅŸarÄ±yla gÃ¼ncellendi.' });
+        setStatus({ type: 'success', message: 'Þifreniz baþarýyla güncellendi.' });
         setShowPasswordChangeModal(false);
         setNewPassword('');
       } else {
         const data = await response.json();
-        setStatus({ type: 'error', message: data.error || 'Åžifre gÃ¼ncellenirken bir hata oluÅŸtu.' });
+        setStatus({ type: 'error', message: data.error || 'Þifre güncellenirken bir hata oluþtu.' });
       }
     } catch (error) {
       console.error("Password change error:", error);
-      setStatus({ type: 'error', message: 'Sistem hatasÄ±.' });
+      setStatus({ type: 'error', message: 'Sistem hatasý.' });
     }
   };
 
-  // Hareketleri .ics takvim dosyasÄ±na aktarma
+  // Hareketleri .ics takvim dosyasýna aktarma
   const exportToCalendar = (userId: string, month: string) => {
     const [year, m] = month.split('-').map(Number);
     const userLogs = logs
@@ -1612,7 +1612,7 @@ export default function App() {
       });
 
     if (userLogs.length === 0) {
-      setStatus({ type: 'error', message: 'Bu ay iÃ§in hareket kaydÄ± bulunamadÄ±.' });
+      setStatus({ type: 'error', message: 'Bu ay için hareket kaydý bulunamadý.' });
       return;
     }
 
@@ -1643,8 +1643,8 @@ export default function App() {
           'BEGIN:VEVENT',
           `DTSTART:${formatICSDate(inTime)}`,
           `DTEND:${formatICSDate(outTime)}`,
-          `SUMMARY:${userName} - Ä°ÅŸ GÃ¼nÃ¼`,
-          `DESCRIPTION:GiriÅŸ: ${format(inTime, 'HH:mm')}${outLog ? ' / Ã‡Ä±kÄ±ÅŸ: ' + format(outTime, 'HH:mm') : ' (Ã‡Ä±kÄ±ÅŸ yok)'}`,
+          `SUMMARY:${userName} - Ýþ Günü`,
+          `DESCRIPTION:Giriþ: ${format(inTime, 'HH:mm')}${outLog ? ' / Çýkýþ: ' + format(outTime, 'HH:mm') : ' (Çýkýþ yok)'}`,
           `UID:pdks-${dateKey}-${inLog.userId}@pdks`,
           'END:VEVENT'
         );
@@ -1671,7 +1671,7 @@ export default function App() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    setStatus({ type: 'success', message: 'Takvim dosyasÄ± indirildi. Telefonunuzda aÃ§arak takviminize ekleyebilirsiniz.' });
+    setStatus({ type: 'success', message: 'Takvim dosyasý indirildi. Telefonunuzda açarak takviminize ekleyebilirsiniz.' });
   };
 
   if (loading) {
@@ -1682,7 +1682,7 @@ export default function App() {
             <div className="h-12 w-12 rounded-full border-[3px] border-zinc-800" />
             <div className="absolute inset-0 h-12 w-12 rounded-full border-[3px] border-transparent border-t-orange-500 animate-spin" />
           </div>
-          <p className="text-xs font-medium text-zinc-500 tracking-widest uppercase">YÃ¼kleniyor</p>
+          <p className="text-xs font-medium text-zinc-500 tracking-widest uppercase">Yükleniyor</p>
         </div>
       </div>
     );
@@ -1726,14 +1726,14 @@ export default function App() {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Åžifre</label>
+              <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Þifre</label>
               <div className="relative">
                 <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
                 <input 
                   name="password"
                   type="password"
                   required
-                  placeholder="Åžifre giriniz"
+                  placeholder="Þifre giriniz"
                   className="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 pl-12 pr-4 py-3.5 text-sm font-medium placeholder:text-zinc-700 focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 focus:outline-none transition-all"
                 />
               </div>
@@ -1753,15 +1753,15 @@ export default function App() {
               type="submit"
               className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 py-4 font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:shadow-orange-500/40 hover:scale-[1.02] active:scale-[0.98]"
             >
-              GiriÅŸ Yap
+              Giriþ Yap
             </button>
           </form>
           
           <p className="text-center text-xs text-zinc-600">
-            GiriÅŸ bilgilerinizi yÃ¶neticinizden temin edebilirsiniz.
+            Giriþ bilgilerinizi yöneticinizden temin edebilirsiniz.
           </p>
           <div className="mt-4 text-center text-[10px] text-zinc-700 font-mono">
-            Cihaz KimliÄŸi: {getOrCreateDeviceId()}
+            Cihaz Kimliði: {getOrCreateDeviceId()}
           </div>
         </motion.div>
       </div>
@@ -1785,14 +1785,14 @@ export default function App() {
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden text-right md:block">
               <p className="text-sm font-medium theme-text">{profile?.name}</p>
-              <p className="text-xs text-zinc-500">{profile?.role === 'admin' ? 'YÃ¶netici' : 'Personel'}</p>
+              <p className="text-xs text-zinc-500">{profile?.role === 'admin' ? 'Yönetici' : 'Personel'}</p>
             </div>
 
-            {/* Tema DeÄŸiÅŸtirici */}
+            {/* Tema Deðiþtirici */}
             <button
               onClick={cycleTheme}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900/10 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-orange-500"
-              title={`Tema: ${theme === 'dark' ? 'Koyu' : theme === 'light' ? 'AÃ§Ä±k' : 'Sistem'}`}
+              title={`Tema: ${theme === 'dark' ? 'Koyu' : theme === 'light' ? 'Açýk' : 'Sistem'}`}
             >
               {theme === 'dark' ? <Moon size={18} /> : theme === 'light' ? <Sun size={18} /> : <Monitor size={18} />}
             </button>
@@ -1841,7 +1841,7 @@ export default function App() {
                             }}
                             className="text-[10px] text-orange-500 font-bold hover:text-orange-400 transition"
                           >
-                            TÃ¼mÃ¼nÃ¼ Okundu
+                            Tümünü Okundu
                           </button>
                         )}
                       </div>
@@ -1857,7 +1857,7 @@ export default function App() {
                               onClick={() => {
                                 markNotificationRead(notif.id!);
                                 if (notif.link) {
-                                  // link -> uygulama rotasÄ± normalize et
+                                  // link -> uygulama rotasý normalize et
                                   const routeMap: Record<string, string> = {
                                     '/takvim': '/home',
                                     '/hareketler': '/movements',
@@ -1964,13 +1964,13 @@ export default function App() {
 
         {activeTab === 'home' && (
           <>
-            {/* Ã‡evrimdÄ±ÅŸÄ± Mod UyarÄ±sÄ± */}
+            {/* Çevrimdýþý Mod Uyarýsý */}
             {!isOnline && (
               <div className="flex items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
                 <WifiOff size={18} className="text-amber-400 shrink-0" />
                 <div>
-                  <p className="text-sm font-bold text-amber-400">Ã‡evrimdÄ±ÅŸÄ± Mod</p>
-                  <p className="text-xs text-amber-400/70">Ä°nternet yok. Hareketler cihazÄ±nÄ±za kaydedilecek, baÄŸlantÄ± gelince otomatik gÃ¶nderilecek.</p>
+                  <p className="text-sm font-bold text-amber-400">Çevrimdýþý Mod</p>
+                  <p className="text-xs text-amber-400/70">Ýnternet yok. Hareketler cihazýnýza kaydedilecek, baðlantý gelince otomatik gönderilecek.</p>
                 </div>
               </div>
             )}
@@ -1979,7 +1979,7 @@ export default function App() {
                 <Clock size={18} className="text-blue-400 shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-blue-400">{offlineQueueCount} Bekleyen Hareket</p>
-                  <p className="text-xs text-blue-400/70">Ä°nternet geldi. Senkronize ediliyor...</p>
+                  <p className="text-xs text-blue-400/70">Ýnternet geldi. Senkronize ediliyor...</p>
                 </div>
               </div>
             )}
@@ -1989,7 +1989,7 @@ export default function App() {
               <button
                 onClick={() => {
                   if (profile?.canRemoteCheckIn) {
-                    // Uzaktan yetkili: her zaman yÃ¶ntem seÃ§im modal'Ä± gÃ¶ster
+                    // Uzaktan yetkili: her zaman yöntem seçim modal'ý göster
                     setPendingScanType('in');
                     setShowRemoteModal(true);
                   } else {
@@ -2001,7 +2001,7 @@ export default function App() {
               >
                 <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 transition-transform group-hover:scale-150" />
                 <LogIn size={40} />
-                <span className="text-lg font-bold">GiriÅŸ Yap</span>
+                <span className="text-lg font-bold">Giriþ Yap</span>
                 {profile?.canRemoteCheckIn && <span className="text-[10px] opacity-70 flex items-center gap-1"><Truck size={10} /> Nakliye Yetkili</span>}
               </button>
               <button
@@ -2017,38 +2017,38 @@ export default function App() {
               >
                 <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/5 transition-transform group-hover:scale-150" />
                 <LogOut size={40} />
-                <span className="text-lg font-bold">Ã‡Ä±kÄ±ÅŸ Yap</span>
+                <span className="text-lg font-bold">Çýkýþ Yap</span>
                 {profile?.canRemoteCheckIn && <span className="text-[10px] opacity-70 flex items-center gap-1"><Truck size={10} /> Nakliye Yetkili</span>}
               </button>
             </div>
 
 
-            {/* YÃ¶netici Dashboard Ã–zet */}
+            {/* Yönetici Dashboard Özet */}
             {profile?.role === 'admin' && dashboardStats && (
               <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <button
-                  onClick={() => setDashboardStatModal({ title: 'Åžu An Ofiste', color: 'emerald', icon: <LogIn size={18} />, people: dashboardStats.presentList })}
+                  onClick={() => setDashboardStatModal({ title: 'Þu An Ofiste', color: 'emerald', icon: <LogIn size={18} />, people: dashboardStats.presentList })}
                   className="rounded-2xl border theme-border bg-emerald-500/10 p-4 text-left hover:bg-emerald-500/20 transition-colors cursor-pointer"
                 >
                   <div className="text-2xl font-black text-emerald-500">{dashboardStats.present}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600/70">Åžu An Ofiste</div>
-                  <div className="text-[9px] text-emerald-700/60 mt-1">Detay iÃ§in tÄ±kla</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600/70">Þu An Ofiste</div>
+                  <div className="text-[9px] text-emerald-700/60 mt-1">Detay için týkla</div>
                 </button>
                 <button
-                  onClick={() => setDashboardStatModal({ title: 'Ä°zinli', color: 'orange', icon: <FileText size={18} />, people: dashboardStats.onLeaveList })}
+                  onClick={() => setDashboardStatModal({ title: 'Ýzinli', color: 'orange', icon: <FileText size={18} />, people: dashboardStats.onLeaveList })}
                   className="rounded-2xl border theme-border bg-orange-500/10 p-4 text-left hover:bg-orange-500/20 transition-colors cursor-pointer"
                 >
                   <div className="text-2xl font-black text-orange-500">{dashboardStats.onLeave}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600/70">Ä°zinli</div>
-                  <div className="text-[9px] text-orange-700/60 mt-1">Detay iÃ§in tÄ±kla</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600/70">Ýzinli</div>
+                  <div className="text-[9px] text-orange-700/60 mt-1">Detay için týkla</div>
                 </button>
                 <button
-                  onClick={() => setDashboardStatModal({ title: 'GeÃ§ Kalan', color: 'red', icon: <Clock size={18} />, people: dashboardStats.lateList })}
+                  onClick={() => setDashboardStatModal({ title: 'Geç Kalan', color: 'red', icon: <Clock size={18} />, people: dashboardStats.lateList })}
                   className="rounded-2xl border theme-border bg-red-500/10 p-4 text-left hover:bg-red-500/20 transition-colors cursor-pointer"
                 >
                   <div className="text-2xl font-black text-red-500">{dashboardStats.late}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-red-600/70">GeÃ§ Kalan</div>
-                  <div className="text-[9px] text-red-700/60 mt-1">Detay iÃ§in tÄ±kla</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-red-600/70">Geç Kalan</div>
+                  <div className="text-[9px] text-red-700/60 mt-1">Detay için týkla</div>
                 </button>
                 <button
                   onClick={() => setDashboardStatModal({ title: 'Gelmeyen', color: 'zinc', icon: <UserX size={18} />, people: dashboardStats.absentList })}
@@ -2056,18 +2056,18 @@ export default function App() {
                 >
                   <div className="text-2xl font-black theme-text">{dashboardStats.absent}</div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Gelmeyen</div>
-                  <div className="text-[9px] text-zinc-600 mt-1">Detay iÃ§in tÄ±kla</div>
+                  <div className="text-[9px] text-zinc-600 mt-1">Detay için týkla</div>
                 </button>
               </div>
             )}
 
-            {/* Personel GeÃ§ Kalma UyarÄ±sÄ± */}
+            {/* Personel Geç Kalma Uyarýsý */}
             {profile?.role !== 'admin' && userLateCountThisMonth > 0 && (
               <div className="mb-6 flex items-center gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4">
                 <AlertTriangle size={24} className="text-red-500 shrink-0" />
                 <div>
-                  <p className="text-sm font-bold text-red-500">GeÃ§ Kalma UyarÄ±sÄ±</p>
-                  <p className="text-xs text-red-500/70">Bu ay iÃ§erisinde <strong>{userLateCountThisMonth} kez</strong> mesai baÅŸlangÄ±Ã§ saati ({settings?.shiftStart || '08:00'}) sonrasÄ±nda giriÅŸ yaptÄ±nÄ±z.</p>
+                  <p className="text-sm font-bold text-red-500">Geç Kalma Uyarýsý</p>
+                  <p className="text-xs text-red-500/70">Bu ay içerisinde <strong>{userLateCountThisMonth} kez</strong> mesai baþlangýç saati ({settings?.shiftStart || '08:00'}) sonrasýnda giriþ yaptýnýz.</p>
                 </div>
               </div>
             )}
@@ -2077,9 +2077,9 @@ export default function App() {
               <div className="rounded-2xl border theme-border theme-bg-secondary p-4">
                 <div className="mb-2 flex items-center gap-2 text-zinc-500">
                   {isOnline ? <Wifi size={16} /> : <WifiOff size={16} className="text-amber-400" />}
-                  <span className="text-xs font-semibold uppercase tracking-wider">AÄŸ Durumu</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider">Að Durumu</span>
                 </div>
-                <p className="text-sm font-medium theme-text">{isOnline ? (currentIp || 'Tespit ediliyor...') : 'Ã‡evrimdÄ±ÅŸÄ±'}</p>
+                <p className="text-sm font-medium theme-text">{isOnline ? (currentIp || 'Tespit ediliyor...') : 'Çevrimdýþý'}</p>
                 <p className="text-[10px] text-zinc-600">Mevcut IP Adresiniz</p>
               </div>
               <div className="rounded-2xl border theme-border theme-bg-secondary p-4">
@@ -2088,14 +2088,14 @@ export default function App() {
                   <span className="text-xs font-semibold uppercase tracking-wider">Konum</span>
                 </div>
                 <p className="text-sm font-medium theme-text">Aktif</p>
-                <p className="text-[10px] text-zinc-600">GPS DoÄŸrulamasÄ±</p>
+                <p className="text-[10px] text-zinc-600">GPS Doðrulamasý</p>
               </div>
               <div className="rounded-2xl border theme-border theme-bg-secondary p-4">
                 <div className="mb-2 flex items-center gap-2 text-zinc-500">
                   <Shield size={16} />
-                  <span className="text-xs font-semibold uppercase tracking-wider">GÃ¼venlik</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider">Güvenlik</span>
                 </div>
-                <p className="text-sm font-medium theme-text">QR + IP KorumalÄ±</p>
+                <p className="text-sm font-medium theme-text">QR + IP Korumalý</p>
                 <p className="text-[10px] text-zinc-600">Sistem Durumu</p>
               </div>
             </div>
@@ -2106,7 +2106,7 @@ export default function App() {
               <section className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Calendar size={24} className="text-orange-500" /> GiriÅŸ Ã‡Ä±kÄ±ÅŸ Hareketlerim
+                    <Calendar size={24} className="text-orange-500" /> Giriþ Çýkýþ Hareketlerim
                   </h2>
                   <div className="flex items-center gap-2">
                     <button 
@@ -2131,7 +2131,7 @@ export default function App() {
                 </div>
                 
               <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 text-center text-[10px] font-bold text-zinc-500 uppercase tracking-tight">
-                {['Pzt', 'Sal', 'Ã‡ar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => <div key={day} className="truncate">{day}</div>)}
+                {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => <div key={day} className="truncate">{day}</div>)}
               </div>
               <div className="grid grid-cols-7 gap-2" key={`cal-${selectedMonth}-${logs.filter(l => l.userId === user?.uid).length}`}>
                 {(() => {
@@ -2267,7 +2267,7 @@ export default function App() {
                                   leave.type === 'report' ? "text-purple-400" : "text-orange-500"
                                 )}>
                                   <span className="text-[10px] font-black uppercase tracking-tighter">
-                                    {leave.type === 'report' ? 'Rapor' : 'Ä°zin'}
+                                    {leave.type === 'report' ? 'Rapor' : 'Ýzin'}
                                   </span>
                                 </div>
                                 {/* Mobile */}
@@ -2289,11 +2289,11 @@ export default function App() {
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-zinc-900 pt-4 px-2">
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
-                    <span className="text-[9px] font-bold text-zinc-500 uppercase">GiriÅŸ</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase">Giriþ</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-orange-400 shadow-[0_0_5px_rgba(251,146,60,0.5)]" />
-                    <span className="text-[9px] font-bold text-zinc-500 uppercase">Ã‡Ä±kÄ±ÅŸ</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase">Çýkýþ</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-blue-500" />
@@ -2301,7 +2301,7 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-1.5 w-4 rounded-full bg-orange-500" />
-                    <span className="text-[9px] font-bold text-zinc-500 uppercase">Ä°zin</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase">Ýzin</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-1.5 w-4 rounded-full bg-purple-500" />
@@ -2309,19 +2309,19 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_5px_rgba(239,68,68,0.5)]" />
-                    <span className="text-[9px] font-bold text-zinc-500 uppercase">HatalÄ±</span>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase">Hatalý</span>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-zinc-900 bg-zinc-900/10 overflow-hidden">
-                  <div className="p-3 border-b border-zinc-900 bg-zinc-900/40 text-[10px] font-bold text-zinc-500 uppercase">DetaylÄ± Liste</div>
+                  <div className="p-3 border-b border-zinc-900 bg-zinc-900/40 text-[10px] font-bold text-zinc-500 uppercase">Detaylý Liste</div>
                   <div className="max-h-[400px] overflow-y-auto">
                     {/* Desktop Table View */}
                     <table className="hidden md:table w-full text-left">
                       <tbody className="divide-y divide-zinc-900">
                         {logs.filter(l => l.userId === user?.uid && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM') === selectedMonth).length === 0 ? (
                           <tr>
-                            <td className="p-8 text-center text-zinc-500 text-xs italic">Bu ay iÃ§in kayÄ±t bulunmuyor.</td>
+                            <td className="p-8 text-center text-zinc-500 text-xs italic">Bu ay için kayýt bulunmuyor.</td>
                           </tr>
                         ) : (
                           logs.filter(l => l.userId === user?.uid && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM') === selectedMonth)
@@ -2341,11 +2341,11 @@ export default function App() {
                                   log.type === 'in' ? "bg-emerald-500/10 text-emerald-500" : "bg-orange-500/10 text-orange-500"
                                 )}>
                                   {log.status === 'error' ? <ShieldAlert size={10} /> : log.status === 'pending' ? <Clock3 size={10} /> : log.type === 'in' ? <LogIn size={10} /> : <LogOut size={10} />}
-                                  {log.status === 'error' ? 'Hata' : log.status === 'pending' ? 'Bekliyor' : (log.type === 'in' ? 'GiriÅŸ' : 'Ã‡Ä±kÄ±ÅŸ')}
+                                  {log.status === 'error' ? 'Hata' : log.status === 'pending' ? 'Bekliyor' : (log.type === 'in' ? 'Giriþ' : 'Çýkýþ')}
                                 </div>
                               </td>
                               <td className="p-4 text-right">
-                                <p className="text-[10px] text-zinc-400 font-bold">{log.status === 'error' ? log.errorMessage : log.status === 'pending' ? 'YÃ¶netici onayÄ± bekleniyor' : ''}</p>
+                                <p className="text-[10px] text-zinc-400 font-bold">{log.status === 'error' ? log.errorMessage : log.status === 'pending' ? 'Yönetici onayý bekleniyor' : ''}</p>
                                 <p className="text-[10px] text-zinc-600 font-mono">{log.ipAddress}</p>
                               </td>
                             </tr>
@@ -2357,7 +2357,7 @@ export default function App() {
                     {/* Mobile Card View */}
                     <div className="md:hidden divide-y divide-zinc-900">
                       {logs.filter(l => l.userId === user?.uid && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM') === selectedMonth).length === 0 ? (
-                        <div className="p-8 text-center text-zinc-500 text-xs italic">Bu ay iÃ§in kayÄ±t bulunmuyor.</div>
+                        <div className="p-8 text-center text-zinc-500 text-xs italic">Bu ay için kayýt bulunmuyor.</div>
                       ) : (
                         logs.filter(l => l.userId === user?.uid && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM') === selectedMonth)
                           .sort((a,b) => (b.timestamp?.toDate?.()?.getTime() || 0) - (a.timestamp?.toDate?.()?.getTime() || 0))
@@ -2375,7 +2375,7 @@ export default function App() {
                               log.status === 'pending' ? "bg-amber-500/10 text-amber-500" :
                               log.type === 'in' ? "bg-emerald-500/10 text-emerald-500" : "bg-orange-500/10 text-orange-500"
                             )}>
-                              {log.status === 'error' ? 'Hata' : log.status === 'pending' ? 'Bekliyor' : (log.type === 'in' ? 'GiriÅŸ' : 'Ã‡Ä±kÄ±ÅŸ')}
+                              {log.status === 'error' ? 'Hata' : log.status === 'pending' ? 'Bekliyor' : (log.type === 'in' ? 'Giriþ' : 'Çýkýþ')}
                             </div>
                           </div>
                         ))
@@ -2429,7 +2429,7 @@ export default function App() {
                     onClick={() => setSelectedPersonnelId(null)}
                     className="flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors w-fit"
                   >
-                    <ArrowLeft size={18} /> Geri DÃ¶n
+                    <ArrowLeft size={18} /> Geri Dön
                   </button>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
@@ -2469,7 +2469,7 @@ export default function App() {
                         }}
                         className="w-full md:w-auto flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 md:py-2 text-sm font-bold text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/10"
                       >
-                        <Plus size={18} /> Manuel KayÄ±t Ekle
+                        <Plus size={18} /> Manuel Kayýt Ekle
                       </button>
                     </div>
                   </div>
@@ -2487,15 +2487,15 @@ export default function App() {
           return (
             <>
               <div className="rounded-2xl border border-zinc-900 bg-zinc-900/30 p-4 flex flex-col items-center justify-center">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase">AylÄ±k Toplam Mesai</p>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase">Aylýk Toplam Mesai</p>
                 <p className="text-2xl font-black text-blue-500">{totalOvertimeHours.toFixed(1)} <span className="text-xs font-normal">Saat</span></p>
               </div>
               <div className="rounded-2xl border border-zinc-900 bg-zinc-900/30 p-4 flex flex-col items-center justify-center">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase">AylÄ±k Toplam Ä°zin</p>
-                <p className="text-2xl font-black text-orange-500">{totalLeaveDays} <span className="text-xs font-normal">GÃ¼n</span></p>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase">Aylýk Toplam Ýzin</p>
+                <p className="text-2xl font-black text-orange-500">{totalLeaveDays} <span className="text-xs font-normal">Gün</span></p>
               </div>
               <div className="rounded-2xl border border-zinc-900 bg-zinc-900/30 p-4 flex flex-col items-center justify-center">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase">GiriÅŸ KaydÄ± SayÄ±sÄ±</p>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase">Giriþ Kaydý Sayýsý</p>
                 <p className="text-2xl font-black text-emerald-500">{userLogs.filter(l => l.type === 'in').length} <span className="text-xs font-normal">Kez</span></p>
               </div>
             </>
@@ -2504,7 +2504,7 @@ export default function App() {
       </div>
 
       <div className="grid grid-cols-7 gap-2 mb-2 text-center text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-        {['Pzt', 'Sal', 'Ã‡ar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => <div key={day}>{day}</div>)}
+        {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => <div key={day}>{day}</div>)}
       </div>
                     <div className="grid grid-cols-7 gap-1 sm:gap-2">
                       {(() => {
@@ -2595,7 +2595,7 @@ export default function App() {
                                 {leave && (
                                   <>
                                     <span className="hidden sm:block text-[8px] lg:text-[9px] font-black uppercase leading-none truncate max-w-full text-orange-500">
-                                      {leave.type === 'report' ? 'RA' : 'Ä°Z'}
+                                      {leave.type === 'report' ? 'RA' : 'ÝZ'}
                                     </span>
                                     <div className={cn(
                                       "sm:hidden h-1 w-full rounded-full",
@@ -2646,11 +2646,11 @@ export default function App() {
                     <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-zinc-900 pt-4 px-2">
                       <div className="flex items-center gap-1.5">
                         <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
-                        <span className="text-[9px] font-bold text-zinc-500 uppercase">GiriÅŸ</span>
+                        <span className="text-[9px] font-bold text-zinc-500 uppercase">Giriþ</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="h-2 w-2 rounded-full bg-orange-400 shadow-[0_0_5px_rgba(251,146,60,0.5)]" />
-                        <span className="text-[9px] font-bold text-zinc-500 uppercase">Ã‡Ä±kÄ±ÅŸ</span>
+                        <span className="text-[9px] font-bold text-zinc-500 uppercase">Çýkýþ</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="h-2 w-2 rounded-full bg-blue-500" />
@@ -2658,7 +2658,7 @@ export default function App() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="h-1.5 w-4 rounded-full bg-orange-500" />
-                        <span className="text-[9px] font-bold text-zinc-500 uppercase">Ä°zin</span>
+                        <span className="text-[9px] font-bold text-zinc-500 uppercase">Ýzin</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="h-1.5 w-4 rounded-full bg-purple-500" />
@@ -2668,7 +2668,7 @@ export default function App() {
 
                   <div className="mt-12 space-y-4">
                     <h4 className="text-lg font-bold flex items-center gap-2">
-                      <Clock size={20} className="text-orange-500" /> TÃ¼m GiriÅŸ/Ã‡Ä±kÄ±ÅŸ KayÄ±tlarÄ±
+                      <Clock size={20} className="text-orange-500" /> Tüm Giriþ/Çýkýþ Kayýtlarý
                     </h4>
                     <div className="overflow-hidden rounded-2xl border border-zinc-900">
                       {/* Desktop Table */}
@@ -2676,9 +2676,9 @@ export default function App() {
                         <thead>
                           <tr className="border-b border-zinc-900 bg-zinc-900/40 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                             <th className="p-4">Tarih / Saat</th>
-                            <th className="p-4">Ä°ÅŸlem</th>
+                            <th className="p-4">Ýþlem</th>
                             <th className="p-4">Kaynak</th>
-                            <th className="p-4 text-right">Ä°ÅŸlem</th>
+                            <th className="p-4 text-right">Ýþlem</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-900">
@@ -2695,7 +2695,7 @@ export default function App() {
                                     "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
                                     log.type === 'in' ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-800 text-zinc-400"
                                   )}>
-                                    {log.type === 'in' ? 'GiriÅŸ' : 'Ã‡Ä±kÄ±ÅŸ'}
+                                    {log.type === 'in' ? 'Giriþ' : 'Çýkýþ'}
                                   </span>
                                 </td>
                                 <td className="p-4 text-xs text-zinc-500">
@@ -2740,7 +2740,7 @@ export default function App() {
                                   "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase",
                                   log.type === 'in' ? "bg-emerald-500/10 text-emerald-500" : "bg-zinc-800 text-zinc-400"
                                 )}>
-                                  {log.type === 'in' ? 'GiriÅŸ' : 'Ã‡Ä±kÄ±ÅŸ'}
+                                  {log.type === 'in' ? 'Giriþ' : 'Çýkýþ'}
                                 </span>
                                 <div className="flex items-center gap-3">
                                   <button
@@ -2791,7 +2791,7 @@ export default function App() {
           <section className="space-y-8">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold flex items-center gap-2">
-                <Users size={28} className="text-orange-500" /> Personel YÃ¶netimi
+                <Users size={28} className="text-orange-500" /> Personel Yönetimi
               </h2>
             </div>
 
@@ -2807,15 +2807,15 @@ export default function App() {
                     <input 
                       name="name"
                       required
-                      placeholder="Ã–rn: Ahmet YÄ±lmaz"
+                      placeholder="Örn: Ahmet Yýlmaz"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Ãœnvan / Pozisyon</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Ünvan / Pozisyon</label>
                     <input 
                       name="title"
-                      placeholder="Ã–rn: YazÄ±lÄ±m GeliÅŸtirici, BÃ¶lÃ¼m MÃ¼dÃ¼rÃ¼"
+                      placeholder="Örn: Yazýlým Geliþtirici, Bölüm Müdürü"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -2824,17 +2824,17 @@ export default function App() {
                     <input 
                       name="personnelId"
                       required
-                      placeholder="Ã–rn: ahmet123"
+                      placeholder="Örn: ahmet123"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Åžifre</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Þifre</label>
                     <input 
                       name="password"
                       type="password"
                       required
-                      placeholder="Åžifre belirleyin"
+                      placeholder="Þifre belirleyin"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -2845,24 +2845,24 @@ export default function App() {
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     >
                       <option value="employee">Personel</option>
-                      <option value="admin">YÃ¶netici</option>
+                      <option value="admin">Yönetici</option>
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">BaÄŸlÄ± OlduÄŸu YÃ¶netici</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Baðlý Olduðu Yönetici</label>
                     <select 
                       name="managerId"
                       required
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     >
-                      <option value="admin_initial">Sistem YÃ¶neticisi</option>
+                      <option value="admin_initial">Sistem Yöneticisi</option>
                       {allUsers.filter(u => u.role === 'admin' && u.uid !== 'admin_initial').map(admin => (
                         <option key={admin.uid} value={admin.uid}>{admin.name}</option>
                       ))}
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">YÄ±llÄ±k Ä°zin Bakiyesi (GÃ¼n)</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Yýllýk Ýzin Bakiyesi (Gün)</label>
                     <input 
                       name="leaveBalance"
                       type="number"
@@ -2872,7 +2872,7 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Ä°ÅŸe GiriÅŸ Tarihi</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Ýþe Giriþ Tarihi</label>
                     <input 
                       name="startDate"
                       type="date"
@@ -2881,7 +2881,7 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">DoÄŸum Tarihi</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Doðum Tarihi</label>
                     <input 
                       name="birthDate"
                       type="date"
@@ -2890,20 +2890,20 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Cihaz KÄ±sÄ±tlamasÄ± (UA Ä°Ã§eriÄŸi)</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Cihaz Kýsýtlamasý (UA Ýçeriði)</label>
                     <input 
                       name="allowedDevice"
                       type="text"
-                      placeholder="Ã–rn: iPhone, Samsung, SM-G991B"
+                      placeholder="Örn: iPhone, Samsung, SM-G991B"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Sabit Cihaz KimliÄŸi (Hardware ID)</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Sabit Cihaz Kimliði (Hardware ID)</label>
                     <input 
                       name="deviceId"
                       type="text"
-                      placeholder="Otomatik tanÄ±mlanÄ±r veya ID girin"
+                      placeholder="Otomatik tanýmlanýr veya ID girin"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -2918,9 +2918,9 @@ export default function App() {
                       <div>
                         <p className="text-sm font-semibold text-white flex items-center gap-2">
                           <Truck size={14} className="text-orange-500" />
-                          Nakliye / Uzaktan GiriÅŸ Yetkisi
+                          Nakliye / Uzaktan Giriþ Yetkisi
                         </p>
-                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis dÄ±ÅŸÄ±ndan (nakliyede) da giriÅŸ-Ã§Ä±kÄ±ÅŸ yapabilir. Konumu kaydedilir, yÃ¶neticileri bildirim alÄ±r.</p>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis dýþýndan (nakliyede) da giriþ-çýkýþ yapabilir. Konumu kaydedilir, yöneticileri bildirim alýr.</p>
                       </div>
                     </label>
                   </div>
@@ -2939,10 +2939,10 @@ export default function App() {
               <table className="hidden md:table w-full text-left">
                 <thead>
                   <tr className="border-b border-zinc-900 bg-zinc-900/40">
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Ä°sim</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Ýsim</th>
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500">ID</th>
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500">Yetki</th>
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500 text-right">Ä°ÅŸlem</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-zinc-500 text-right">Ýþlem</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-900">
@@ -2969,7 +2969,7 @@ export default function App() {
                           "rounded-full px-2 py-1 text-[10px] font-bold uppercase",
                           u.role === 'admin' ? "bg-orange-500/10 text-orange-500" : "bg-zinc-800 text-zinc-400"
                         )}>
-                          {u.role === 'admin' ? 'YÃ¶netici' : 'Personel'}
+                          {u.role === 'admin' ? 'Yönetici' : 'Personel'}
                         </span>
                       </td>
                       <td className="p-4 text-right">
@@ -3018,7 +3018,7 @@ export default function App() {
                             "rounded-full px-1.5 py-0.5 text-[9px] font-black uppercase",
                             u.role === 'admin' ? "bg-orange-500/10 text-orange-500" : "bg-zinc-800 text-zinc-600"
                           )}>
-                            {u.role === 'admin' ? 'YÃ¶net' : 'Pers'}
+                            {u.role === 'admin' ? 'Yönet' : 'Pers'}
                           </span>
                         </div>
                       </div>
@@ -3052,7 +3052,7 @@ export default function App() {
           <section className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold flex items-center gap-2">
-                <QrCode size={28} className="text-orange-500" /> QR Kod OluÅŸturucu
+                <QrCode size={28} className="text-orange-500" /> QR Kod Oluþturucu
               </h2>
             </div>
 
@@ -3068,15 +3068,15 @@ export default function App() {
                   />
                 </div>
                 <div className="text-center">
-                  <p className="font-bold text-lg">Ä°ÅŸ Yeri GiriÅŸ QR Kodu</p>
-                  <p className="text-sm text-zinc-500">Bu kodu yazdÄ±rÄ±p iÅŸ yerine asabilirsiniz.</p>
+                  <p className="font-bold text-lg">Ýþ Yeri Giriþ QR Kodu</p>
+                  <p className="text-sm text-zinc-500">Bu kodu yazdýrýp iþ yerine asabilirsiniz.</p>
                 </div>
                 <div className="flex gap-3">
                   <button 
                     onClick={handlePrintQR}
                     className="flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-2 text-sm font-bold hover:bg-orange-600 transition-colors"
                   >
-                    <Printer size={18} /> YazdÄ±r
+                    <Printer size={18} /> Yazdýr
                   </button>
                   <button 
                     onClick={regenerateQRSecret}
@@ -3090,35 +3090,35 @@ export default function App() {
               <div className="space-y-6">
                 <section className="rounded-3xl border border-zinc-900 bg-zinc-900/20 p-6">
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <SettingsIcon size={20} className="text-orange-500" /> AyarlarÄ± GÃ¼ncelle
+                    <SettingsIcon size={20} className="text-orange-500" /> Ayarlarý Güncelle
                   </h3>
                   <form onSubmit={updateSettings} className="space-y-6">
                     <div className="space-y-4">
-                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">Åžirket Genel Bilgileri</h4>
+                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">Þirket Genel Bilgileri</h4>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-zinc-500 uppercase">Åžirket AdÄ±</label>
+                          <label className="text-xs font-semibold text-zinc-500 uppercase">Þirket Adý</label>
                           <input 
                             name="companyName"
                             defaultValue={settings?.companyName}
-                            placeholder="Ã–rn: ABC YazÄ±lÄ±m Ltd. Åžti."
+                            placeholder="Örn: ABC Yazýlým Ltd. Þti."
                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-zinc-500 uppercase">HaftalÄ±k Ã‡alÄ±ÅŸma GÃ¼nÃ¼</label>
+                          <label className="text-xs font-semibold text-zinc-500 uppercase">Haftalýk Çalýþma Günü</label>
                           <select 
                             name="workDaysPerWeek"
                             defaultValue={settings?.workDaysPerWeek || 6}
                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                           >
-                            <option value="5">5 GÃ¼n</option>
-                            <option value="6">6 GÃ¼n</option>
+                            <option value="5">5 Gün</option>
+                            <option value="6">6 Gün</option>
                           </select>
                         </div>
                         <div className="space-y-2">
                           <label className="text-xs font-semibold text-zinc-500 uppercase flex items-center gap-1">
-                            Hesaplama ToleransÄ± (Dk) <Info size={12} className="text-zinc-600" title="GeÃ§ giriÅŸ/erken Ã§Ä±kÄ±ÅŸ/fazla mesai toleransÄ±" />
+                            Hesaplama Toleransý (Dk) <Info size={12} className="text-zinc-600" title="Geç giriþ/erken çýkýþ/fazla mesai toleransý" />
                           </label>
                           <input 
                             name="roundingThresholdMinutes"
@@ -3131,10 +3131,10 @@ export default function App() {
                     </div>
 
                     <div className="space-y-4">
-                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">Vardiya & Ã‡alÄ±ÅŸma Saatleri</h4>
+                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">Vardiya & Çalýþma Saatleri</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-zinc-500 uppercase">Mesai BaÅŸlangÄ±cÄ±</label>
+                          <label className="text-xs font-semibold text-zinc-500 uppercase">Mesai Baþlangýcý</label>
                           <input 
                             name="shiftStart"
                             type="time"
@@ -3143,7 +3143,7 @@ export default function App() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-zinc-500 uppercase">Mesai BitiÅŸi</label>
+                          <label className="text-xs font-semibold text-zinc-500 uppercase">Mesai Bitiþi</label>
                           <input 
                             name="shiftEnd"
                             type="time"
@@ -3155,14 +3155,14 @@ export default function App() {
                     </div>
 
                     <div className="space-y-4">
-                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">GÃ¼venlik & EriÅŸim</h4>
+                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">Güvenlik & Eriþim</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-zinc-500 uppercase">Ä°ÅŸ Yeri IP Adresi</label>
+                          <label className="text-xs font-semibold text-zinc-500 uppercase">Ýþ Yeri IP Adresi</label>
                           <input 
                             name="officeIp"
                             defaultValue={settings?.officeIp}
-                            placeholder="Ã–rn: 176.234.12.34"
+                            placeholder="Örn: 176.234.12.34"
                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                           />
                         </div>
@@ -3172,7 +3172,7 @@ export default function App() {
                             name="qrSecret"
                             value={settings?.qrSecret || ''}
                             onChange={(e) => setSettings(prev => prev ? { ...prev, qrSecret: e.target.value } : null)}
-                            placeholder="QR iÃ§eriÄŸi ne olmalÄ±?"
+                            placeholder="QR içeriði ne olmalý?"
                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                           />
                         </div>
@@ -3180,7 +3180,7 @@ export default function App() {
                     </div>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">Mola KurallarÄ±</label>
+                        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">Mola Kurallarý</label>
                         <button 
                           type="button"
                           onClick={() => {
@@ -3196,7 +3196,7 @@ export default function App() {
                         {(settings?.breakRules || []).map((rule, idx) => (
                           <div key={idx} className="flex items-end gap-3 bg-zinc-950/50 p-3 rounded-xl border border-zinc-800/50 group">
                             <div className="flex-1 space-y-1">
-                              <label className="text-[10px] text-zinc-600 uppercase font-bold">Ã‡alÄ±ÅŸma EÅŸiÄŸi (Saat)</label>
+                              <label className="text-[10px] text-zinc-600 uppercase font-bold">Çalýþma Eþiði (Saat)</label>
                               <input 
                                 name="rule_threshold"
                                 type="number"
@@ -3227,12 +3227,12 @@ export default function App() {
                           </div>
                         ))}
                         {(settings?.breakRules || []).length === 0 && (
-                          <p className="text-[10px] text-zinc-600 italic text-center py-4">HenÃ¼z mola kuralÄ± tanÄ±mlanmadÄ±. Standart kanun kurallarÄ± uygulanÄ±r.</p>
+                          <p className="text-[10px] text-zinc-600 italic text-center py-4">Henüz mola kuralý tanýmlanmadý. Standart kanun kurallarý uygulanýr.</p>
                         )}
                       </div>
                     </div>
                     <button className="w-full rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">
-                      AyarlarÄ± Kaydet
+                      Ayarlarý Kaydet
                     </button>
                   </form>
                 </section>
@@ -3297,7 +3297,7 @@ export default function App() {
             </div>
 
             <div className="rounded-3xl border border-zinc-900 bg-zinc-900/20 p-8 space-y-8">
-              {/* Profil FotoÄŸrafÄ± */}
+              {/* Profil Fotoðrafý */}
               <div className="flex flex-col items-center gap-3">
                 <div className="relative group">
                   {profile?.avatarUrl ? (
@@ -3332,12 +3332,12 @@ export default function App() {
                       const file = e.target.files?.[0];
                       if (!file || !user) return;
                       if (file.size > 8 * 1024 * 1024) {
-                        setStatus({ type: 'error', message: 'FotoÄŸraf en fazla 8MB olabilir.' });
+                        setStatus({ type: 'error', message: 'Fotoðraf en fazla 8MB olabilir.' });
                         return;
                       }
                       setAvatarUploading(true);
                       try {
-                        // Canvas ile yeniden boyutlandÄ±r ve sÄ±kÄ±ÅŸtÄ±r (Firebase Storage yerine)
+                        // Canvas ile yeniden boyutlandýr ve sýkýþtýr (Firebase Storage yerine)
                         const avatarBase64 = await new Promise<string>((resolve, reject) => {
                           const img = new Image();
                           const objectUrl = URL.createObjectURL(file);
@@ -3352,14 +3352,14 @@ export default function App() {
                             URL.revokeObjectURL(objectUrl);
                             resolve(canvas.toDataURL('image/jpeg', 0.8));
                           };
-                          img.onerror = () => reject(new Error('Resim yÃ¼klenemedi.'));
+                          img.onerror = () => reject(new Error('Resim yüklenemedi.'));
                           img.src = objectUrl;
                         });
                         await userMutation.mutateAsync({ method: 'PUT', id: user.uid, payload: { avatarUrl: avatarBase64 } });
                         setProfile(prev => prev ? { ...prev, avatarUrl: avatarBase64 } : prev);
-                        setStatus({ type: 'success', message: 'Profil fotoÄŸrafÄ± gÃ¼ncellendi.' });
+                        setStatus({ type: 'success', message: 'Profil fotoðrafý güncellendi.' });
                       } catch (err: any) {
-                        setStatus({ type: 'error', message: 'FotoÄŸraf yÃ¼klenemedi: ' + err.message });
+                        setStatus({ type: 'error', message: 'Fotoðraf yüklenemedi: ' + err.message });
                       } finally {
                         setAvatarUploading(false);
                         e.target.value = '';
@@ -3371,10 +3371,10 @@ export default function App() {
                 <div className="text-center">
                   <h3 className="text-2xl font-bold">{profile?.name}</h3>
                   {profile?.title && <p className="text-orange-500 font-bold text-sm uppercase tracking-widest mt-1">{profile.title}</p>}
-                  <p className="text-zinc-500 text-xs mt-1">{profile?.role === 'admin' ? 'YÃ¶netici' : 'Personel'}</p>
+                  <p className="text-zinc-500 text-xs mt-1">{profile?.role === 'admin' ? 'Yönetici' : 'Personel'}</p>
                 </div>
 
-                {/* FotoÄŸraf aksiyonlarÄ± */}
+                {/* Fotoðraf aksiyonlarý */}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => avatarInputRef.current?.click()}
@@ -3382,17 +3382,17 @@ export default function App() {
                     className="flex items-center gap-1.5 rounded-xl bg-orange-500/10 px-4 py-2 text-xs font-bold text-orange-500 hover:bg-orange-500/20 transition-colors disabled:opacity-50"
                   >
                     <Camera size={13} />
-                    {profile?.avatarUrl ? 'DeÄŸiÅŸtir' : 'FotoÄŸraf Ekle'}
+                    {profile?.avatarUrl ? 'Deðiþtir' : 'Fotoðraf Ekle'}
                   </button>
                   {profile?.avatarUrl && (
                     <button
                       onClick={async () => {
                         if (!user) return;
-                        if (!window.confirm('Profil fotoÄŸrafÄ± silinsin mi?')) return;
+                        if (!window.confirm('Profil fotoðrafý silinsin mi?')) return;
                         try {
                           await userMutation.mutateAsync({ method: 'PUT', id: user.uid, payload: { avatarUrl: null } });
                           setProfile(prev => prev ? { ...prev, avatarUrl: undefined } : prev);
-                          setStatus({ type: 'success', message: 'Profil fotoÄŸrafÄ± silindi.' });
+                          setStatus({ type: 'success', message: 'Profil fotoðrafý silindi.' });
                         } catch (err: any) {
                           setStatus({ type: 'error', message: 'Silinemedi: ' + err.message });
                         }
@@ -3411,20 +3411,20 @@ export default function App() {
                   <p className="font-medium">{profile?.personnelId}</p>
                 </div>
                 <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-4 space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Ä°ÅŸe GiriÅŸ Tarihi</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Ýþe Giriþ Tarihi</p>
                   <p className="font-medium">
                     {profile?.startDate ? format(new Date(profile.startDate), 'd MMMM yyyy', { locale: tr }) : '-'}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-4 space-y-1 md:col-span-2">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Resmi YÄ±llÄ±k Ä°zin Bakiyesi</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Resmi Yýllýk Ýzin Bakiyesi</p>
                   <div className="flex items-center justify-between">
                     <p className="text-2xl font-black text-orange-500">
-                      {getEffectiveLeaveBalance(profile)} GÃœN
+                      {getEffectiveLeaveBalance(profile)} GÜN
                     </p>
                     <div className="text-right">
-                      <p className="text-[9px] text-zinc-500 uppercase">Hukuki Hak EdiÅŸ (Referans)</p>
-                      <p className="text-xs font-bold text-zinc-400">{calculateLegalLeave(profile?.startDate, profile?.birthDate)} GÃ¼n</p>
+                      <p className="text-[9px] text-zinc-500 uppercase">Hukuki Hak Ediþ (Referans)</p>
+                      <p className="text-xs font-bold text-zinc-400">{calculateLegalLeave(profile?.startDate, profile?.birthDate)} Gün</p>
                     </div>
                   </div>
                 </div>
@@ -3435,7 +3435,7 @@ export default function App() {
                   onClick={() => setShowPasswordChangeModal(true)}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-500/10 py-4 font-bold text-orange-500 transition-colors hover:bg-orange-500/20"
                 >
-                  <Key size={20} /> Åžifreyi DeÄŸiÅŸtir
+                  <Key size={20} /> Þifreyi Deðiþtir
                 </button>
                 <button 
                   onClick={handleLogout}
@@ -3460,7 +3460,7 @@ export default function App() {
               >
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Edit className="text-orange-500" /> Personel DÃ¼zenle
+                    <Edit className="text-orange-500" /> Personel Düzenle
                   </h2>
                   <button 
                     onClick={() => setEditingUser(null)}
@@ -3470,7 +3470,7 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Profil FotoÄŸrafÄ± YÃ¶netimi */}
+                {/* Profil Fotoðrafý Yönetimi */}
                 <div className="flex items-center gap-5 p-4 rounded-2xl border border-zinc-800 bg-zinc-900/30">
                   <div className="relative group shrink-0">
                     {editingUser.avatarUrl ? (
@@ -3504,24 +3504,24 @@ export default function App() {
                                 URL.revokeObjectURL(objectUrl);
                                 resolve(canvas.toDataURL('image/jpeg', 0.8));
                               };
-                              img.onerror = () => reject(new Error('Resim yÃ¼klenemedi.'));
+                              img.onerror = () => reject(new Error('Resim yüklenemedi.'));
                               img.src = objectUrl;
                             });
                             await userMutation.mutateAsync({ method: 'PUT', id: editingUser.uid, payload: { avatarUrl: avatarBase64 } });
                             setEditingUser(prev => prev ? { ...prev, avatarUrl: avatarBase64 } : prev);
-                            // Personele bildirim gÃ¶nder
+                            // Personele bildirim gönder
                             await fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pdks_token') }, body: JSON.stringify({
                               userId: editingUser.uid,
-                              title: 'Profil FotoÄŸrafÄ±nÄ±z GÃ¼ncellendi',
-                              message: `${profile?.name || 'YÃ¶neticiniz'} profil fotoÄŸrafÄ±nÄ±zÄ± gÃ¼ncelledi.`,
+                              title: 'Profil Fotoðrafýnýz Güncellendi',
+                              message: `${profile?.name || 'Yöneticiniz'} profil fotoðrafýnýzý güncelledi.`,
                               type: 'info',
                               read: false,
                               link: '/profile',
                               createdAt: new Date().toISOString(),
                             }) }).catch(() => {});
-                            setStatus({ type: 'success', message: `${editingUser.name} iÃ§in profil fotoÄŸrafÄ± gÃ¼ncellendi.` });
+                            setStatus({ type: 'success', message: `${editingUser.name} için profil fotoðrafý güncellendi.` });
                           } catch (err: any) {
-                            setStatus({ type: 'error', message: 'FotoÄŸraf yÃ¼klenemedi: ' + err.message });
+                            setStatus({ type: 'error', message: 'Fotoðraf yüklenemedi: ' + err.message });
                           } finally {
                             setAvatarUploading(false);
                             e.target.value = '';
@@ -3536,33 +3536,33 @@ export default function App() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm mb-1">Profil FotoÄŸrafÄ±</p>
-                    <p className="text-[11px] text-zinc-500 mb-3">Resmin Ã¼zerine tÄ±klayarak fotoÄŸrafÄ± deÄŸiÅŸtirebilirsiniz. DeÄŸiÅŸiklik personele bildirim olarak iletilir.</p>
+                    <p className="font-bold text-sm mb-1">Profil Fotoðrafý</p>
+                    <p className="text-[11px] text-zinc-500 mb-3">Resmin üzerine týklayarak fotoðrafý deðiþtirebilirsiniz. Deðiþiklik personele bildirim olarak iletilir.</p>
                     {editingUser.avatarUrl && (
                       <button
                         type="button"
                         onClick={async () => {
-                          if (!window.confirm('Profil fotoÄŸrafÄ± silinsin mi?')) return;
+                          if (!window.confirm('Profil fotoðrafý silinsin mi?')) return;
                           try {
                             await userMutation.mutateAsync({ method: 'PUT', id: editingUser.uid, payload: { avatarUrl: null } });
                             setEditingUser(prev => prev ? { ...prev, avatarUrl: undefined } : prev);
                             await fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pdks_token') }, body: JSON.stringify({
                               userId: editingUser.uid,
-                              title: 'Profil FotoÄŸrafÄ±nÄ±z Silindi',
-                              message: `${profile?.name || 'YÃ¶neticiniz'} profil fotoÄŸrafÄ±nÄ±zÄ± kaldÄ±rdÄ±.`,
+                              title: 'Profil Fotoðrafýnýz Silindi',
+                              message: `${profile?.name || 'Yöneticiniz'} profil fotoðrafýnýzý kaldýrdý.`,
                               type: 'info',
                               read: false,
                               link: '/profile',
                               createdAt: new Date().toISOString(),
                             }) }).catch(() => {});
-                            setStatus({ type: 'success', message: 'FotoÄŸraf silindi.' });
+                            setStatus({ type: 'success', message: 'Fotoðraf silindi.' });
                           } catch (err: any) {
                             setStatus({ type: 'error', message: 'Silinemedi: ' + err.message });
                           }
                         }}
                         className="flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-1.5 text-[11px] font-bold text-red-500 hover:bg-red-500/20 transition-colors"
                       >
-                        <Trash2 size={11} /> FotoÄŸrafÄ± KaldÄ±r
+                        <Trash2 size={11} /> Fotoðrafý Kaldýr
                       </button>
                     )}
                   </div>
@@ -3579,11 +3579,11 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Ãœnvan / Pozisyon</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Ünvan / Pozisyon</label>
                     <input 
                       name="title"
                       defaultValue={editingUser.title || ''}
-                      placeholder="Ã–rn: BÃ¶lÃ¼m MÃ¼dÃ¼rÃ¼, Tekniker"
+                      placeholder="Örn: Bölüm Müdürü, Tekniker"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -3595,18 +3595,18 @@ export default function App() {
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     >
                       <option value="employee">Personel</option>
-                      <option value="admin">YÃ¶netici</option>
+                      <option value="admin">Yönetici</option>
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">BaÄŸlÄ± OlduÄŸu YÃ¶netici</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Baðlý Olduðu Yönetici</label>
                     <select 
                       name="managerId"
                       required
                       defaultValue={editingUser.managerId || 'admin_initial'}
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     >
-                      <option value="admin_initial">Sistem YÃ¶neticisi</option>
+                      <option value="admin_initial">Sistem Yöneticisi</option>
                       {allUsers.filter(u => u.role === 'admin' && u.uid !== 'admin_initial').map(admin => (
                         <option key={admin.uid} value={admin.uid}>{admin.name}</option>
                       ))}
@@ -3614,8 +3614,8 @@ export default function App() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-semibold text-zinc-500 uppercase flex items-center justify-between">
-                      YÄ±llÄ±k Ä°zin Bakiyesi (GÃ¼n)
-                      <span className="text-[10px] text-orange-500 lowercase font-normal italic">Mevcut: {getEffectiveLeaveBalance(editingUser)} GÃ¼n</span>
+                      Yýllýk Ýzin Bakiyesi (Gün)
+                      <span className="text-[10px] text-orange-500 lowercase font-normal italic">Mevcut: {getEffectiveLeaveBalance(editingUser)} Gün</span>
                     </label>
                     <input 
                       name="leaveBalance"
@@ -3626,7 +3626,7 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Ä°ÅŸe GiriÅŸ Tarihi</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Ýþe Giriþ Tarihi</label>
                     <input 
                       name="startDate"
                       type="date"
@@ -3635,7 +3635,7 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">DoÄŸum Tarihi</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Doðum Tarihi</label>
                     <input 
                       name="birthDate"
                       type="date"
@@ -3644,19 +3644,19 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Cihaz KÄ±sÄ±tlamasÄ±</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Cihaz Kýsýtlamasý</label>
                     <input 
                       name="allowedDevice"
                       type="text"
                       defaultValue={editingUser.allowedDevice || ''}
-                      placeholder="Ã–rn: iPhone, Samsung"
+                      placeholder="Örn: iPhone, Samsung"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
-                    <p className="text-[10px] text-zinc-600">BoÅŸ bÄ±rakÄ±lÄ±rsa her cihazdan giriÅŸ yapabilir.</p>
+                    <p className="text-[10px] text-zinc-600">Boþ býrakýlýrsa her cihazdan giriþ yapabilir.</p>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-zinc-500 uppercase">Sabit Cihaz KimliÄŸi (Fixed ID)</label>
+                      <label className="text-xs font-semibold text-zinc-500 uppercase">Sabit Cihaz Kimliði (Fixed ID)</label>
                       {editingUser.deviceId && (
                         <button 
                           type="button"
@@ -3672,12 +3672,12 @@ export default function App() {
                                 updates: { deviceId: '' }
                               })
                             }).then(() => {
-                              setStatus({ type: 'success', message: 'Cihaz kilidi kaldÄ±rÄ±ldÄ±.' });
+                              setStatus({ type: 'success', message: 'Cihaz kilidi kaldýrýldý.' });
                             });
                           }}
                           className="text-[10px] font-bold text-red-500 hover:underline"
                         >
-                          Cihaz Kilidini KaldÄ±r
+                          Cihaz Kilidini Kaldýr
                         </button>
                       )}
                     </div>
@@ -3685,11 +3685,11 @@ export default function App() {
                       name="deviceId"
                       type="text"
                       defaultValue={editingUser.deviceId || ''}
-                      placeholder="Otomatik atanÄ±r, manuel girmek iÃ§in yapÄ±ÅŸtÄ±rÄ±n"
+                      placeholder="Otomatik atanýr, manuel girmek için yapýþtýrýn"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
-                  {/* Nakliye / Uzaktan giriÅŸ yetkisi */}
+                  {/* Nakliye / Uzaktan giriþ yetkisi */}
                   <div className="md:col-span-2">
                     <label className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 cursor-pointer hover:border-orange-500/50 transition-colors">
                       <input 
@@ -3702,19 +3702,19 @@ export default function App() {
                       <div>
                         <p className="text-sm font-semibold text-white flex items-center gap-2">
                           <Truck size={14} className="text-orange-500" />
-                          Nakliye / Uzaktan GiriÅŸ Yetkisi
+                          Nakliye / Uzaktan Giriþ Yetkisi
                         </p>
-                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis dÄ±ÅŸÄ±ndan (nakliyede) da giriÅŸ-Ã§Ä±kÄ±ÅŸ yapabilir. Konumu kaydedilir, yÃ¶neticileri bildirim alÄ±r.</p>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis dýþýndan (nakliyede) da giriþ-çýkýþ yapabilir. Konumu kaydedilir, yöneticileri bildirim alýr.</p>
                       </div>
                     </label>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Åžifre SÄ±fÄ±rla (Yeni Åžifre)</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Þifre Sýfýrla (Yeni Þifre)</label>
                     <input 
                       name="password"
                       type="password"
-                      placeholder="DeÄŸiÅŸtirmek istemiyorsanÄ±z boÅŸ bÄ±rakÄ±n"
+                      placeholder="Deðiþtirmek istemiyorsanýz boþ býrakýn"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -3730,7 +3730,7 @@ export default function App() {
                       Sil
                     </button>
                     <button className="flex-[2] rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">
-                      DeÄŸiÅŸiklikleri Kaydet
+                      Deðiþiklikleri Kaydet
                     </button>
                   </div>
                 </form>
@@ -3760,9 +3760,9 @@ export default function App() {
                 <div>
                   <h3 className="text-xl font-bold flex items-center gap-2">
                     <Clock4 size={24} className="text-orange-500" />
-                    {editingLog ? 'KaydÄ± DÃ¼zenle' : 'Manuel KayÄ±t Ekle'}
+                    {editingLog ? 'Kaydý Düzenle' : 'Manuel Kayýt Ekle'}
                   </h3>
-                  {/* Hedef kiÅŸi adÄ±nÄ± gÃ¶ster */}
+                  {/* Hedef kiþi adýný göster */}
                   {(() => {
                     const tid = selectedDayDetails?.userId || selectedPersonnelId || editingLog?.userId;
                     const tName = tid ? (allUsers.find(u => u.uid === tid)?.name || (profile?.uid === tid ? profile?.name : null)) : null;
@@ -3796,7 +3796,7 @@ export default function App() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase">Ä°ÅŸlem Tipi</label>
+                  <label className="text-xs font-semibold text-zinc-500 uppercase">Ýþlem Tipi</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -3806,7 +3806,7 @@ export default function App() {
                         manualLogType === 'in' ? "bg-emerald-600 text-white" : "bg-zinc-900 text-zinc-500"
                       )}
                     >
-                      GiriÅŸ
+                      Giriþ
                     </button>
                     <button
                       type="button"
@@ -3816,7 +3816,7 @@ export default function App() {
                         manualLogType === 'out' ? "bg-orange-600 text-white" : "bg-zinc-900 text-zinc-500"
                       )}
                     >
-                      Ã‡Ä±kÄ±ÅŸ
+                      Çýkýþ
                     </button>
                   </div>
                 </div>
@@ -3835,7 +3835,7 @@ export default function App() {
                     type="submit"
                     className="flex-[2] rounded-xl bg-orange-500 py-4 font-bold text-white transition-colors hover:bg-orange-600"
                   >
-                    {editingLog ? 'GÃ¼ncelle' : 'Kaydet'}
+                    {editingLog ? 'Güncelle' : 'Kaydet'}
                   </button>
                 </div>
               </form>
@@ -3856,34 +3856,34 @@ export default function App() {
               className="relative w-full max-w-lg rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-2xl"
             >
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-xl font-bold">Ä°zin Talebini DÃ¼zenle</h3>
+                <h3 className="text-xl font-bold">Ýzin Talebini Düzenle</h3>
                 <button onClick={() => setEditingLeave(null)} className="rounded-full bg-zinc-900 p-2 text-zinc-500 hover:bg-zinc-800"><X size={20} /></button>
               </div>
               <form onSubmit={handleUpdateLeave} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">BaÅŸlangÄ±Ã§</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Baþlangýç</label>
                     <input name="startDate" type="date" required defaultValue={editingLeave.startDate} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">BitiÅŸ</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Bitiþ</label>
                     <input name="endDate" type="date" required defaultValue={editingLeave.endDate} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none" />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase">GÃ¼n SayÄ±sÄ±</label>
+                  <label className="text-xs font-semibold text-zinc-500 uppercase">Gün Sayýsý</label>
                   <input name="days" type="number" required defaultValue={editingLeave.days} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-zinc-500 uppercase">Durum</label>
                   <select name="status" defaultValue={editingLeave.status} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none appearance-none">
                     <option value="pending">Bekliyor</option>
-                    <option value="approved">OnaylandÄ±</option>
+                    <option value="approved">Onaylandý</option>
                     <option value="rejected">Reddedildi</option>
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase">AÃ§Ä±klama</label>
+                  <label className="text-xs font-semibold text-zinc-500 uppercase">Açýklama</label>
                   <textarea name="reason" required defaultValue={editingLeave.reason} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none h-24 resize-none" />
                 </div>
                 <div className="flex gap-2">
@@ -3898,7 +3898,7 @@ export default function App() {
                   >
                     Sil
                   </button>
-                  <button type="submit" className="flex-[2] rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">GÃ¼ncelle</button>
+                  <button type="submit" className="flex-[2] rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">Güncelle</button>
                 </div>
               </form>
             </motion.div>
@@ -3918,7 +3918,7 @@ export default function App() {
               className="relative w-full max-w-lg rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-2xl"
             >
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-xl font-bold">Mesai DÃ¼zenle</h3>
+                <h3 className="text-xl font-bold">Mesai Düzenle</h3>
                 <button onClick={() => setEditingOvertime(null)} className="rounded-full bg-zinc-900 p-2 text-zinc-500 hover:bg-zinc-800"><X size={20} /></button>
               </div>
               <form onSubmit={async (e) => {
@@ -3931,7 +3931,7 @@ export default function App() {
                   status: formData.get('status')
                 } });
                 setEditingOvertime(null);
-                setStatus({ type: 'success', message: 'Mesai kaydÄ± gÃ¼ncellendi' });
+                setStatus({ type: 'success', message: 'Mesai kaydý güncellendi' });
               }} className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-zinc-500 uppercase">Tarih</label>
@@ -3945,12 +3945,12 @@ export default function App() {
                   <label className="text-xs font-semibold text-zinc-500 uppercase">Durum</label>
                   <select name="status" defaultValue={editingOvertime.status} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none appearance-none">
                     <option value="pending">Bekliyor</option>
-                    <option value="approved">OnaylandÄ±</option>
+                    <option value="approved">Onaylandý</option>
                     <option value="rejected">Reddedildi</option>
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase">AÃ§Ä±klama</label>
+                  <label className="text-xs font-semibold text-zinc-500 uppercase">Açýklama</label>
                   <textarea name="description" required defaultValue={editingOvertime.description} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none h-24 resize-none" />
                 </div>
                 <div className="flex gap-2">
@@ -3962,13 +3962,13 @@ export default function App() {
                         deleted: true,
                       } });
                       setEditingOvertime(null);
-                      setStatus({ type: 'success', message: 'Mesai kaydÄ± silindi.' });
+                      setStatus({ type: 'success', message: 'Mesai kaydý silindi.' });
                     }}
                     className="flex-1 rounded-xl bg-red-500/10 py-3 font-bold text-red-500 transition-colors hover:bg-red-500/20"
                   >
                     Sil
                   </button>
-                  <button type="submit" className="flex-[2] rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">GÃ¼ncelle</button>
+                  <button type="submit" className="flex-[2] rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">Güncelle</button>
                 </div>
               </form>
             </motion.div>
@@ -3989,23 +3989,23 @@ export default function App() {
             >
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="text-xl font-bold flex items-center gap-2">
-                  <Key size={24} className="text-orange-500" /> Åžifreyi DeÄŸiÅŸtir
+                  <Key size={24} className="text-orange-500" /> Þifreyi Deðiþtir
                 </h3>
                 <button onClick={() => setShowPasswordChangeModal(false)} className="rounded-full bg-zinc-900 p-2 text-zinc-500 hover:bg-zinc-800"><X size={20} /></button>
               </div>
               <form onSubmit={handleSelfPasswordChange} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase">Yeni Åžifre</label>
+                  <label className="text-xs font-semibold text-zinc-500 uppercase">Yeni Þifre</label>
                   <input 
                     type="password" 
                     required 
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Åžifrenizi girin" 
+                    placeholder="Þifrenizi girin" 
                     className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none" 
                   />
                 </div>
-                <button type="submit" className="w-full rounded-xl bg-orange-500 py-4 font-bold text-white transition-colors hover:bg-orange-600">GÃ¼ncelle</button>
+                <button type="submit" className="w-full rounded-xl bg-orange-500 py-4 font-bold text-white transition-colors hover:bg-orange-600">Güncelle</button>
               </form>
             </motion.div>
           </div>
@@ -4043,7 +4043,7 @@ export default function App() {
                   </div>
                   <div>
                     <p className="font-black text-white">{dashboardStatModal.title}</p>
-                    <p className="text-xs text-zinc-400">{dashboardStatModal.people.length} kiÅŸi Â· BugÃ¼n</p>
+                    <p className="text-xs text-zinc-400">{dashboardStatModal.people.length} kiþi · Bugün</p>
                   </div>
                 </div>
                 <button onClick={() => setDashboardStatModal(null)} className="rounded-full bg-zinc-800/60 p-2 text-zinc-400 hover:bg-zinc-700">
@@ -4103,7 +4103,7 @@ export default function App() {
               </div>
               
               <div className="space-y-6 pt-4">
-                {/* Manuel Hareket Ekle: admin veya bu gÃ¼nÃ¼n sahibinin yÃ¶neticisi */}
+                {/* Manuel Hareket Ekle: admin veya bu günün sahibinin yöneticisi */}
                 {(() => {
                   const dayUserId = selectedDayDetails.userId;
                   const dayUser = allUsers.find(u => u.uid === dayUserId);
@@ -4129,11 +4129,11 @@ export default function App() {
                 {/* Logs Section */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-zinc-500 uppercase flex items-center gap-2">
-                    <LogIn size={14} className="text-emerald-500" /> GiriÅŸ-Ã‡Ä±kÄ±ÅŸ KayÄ±tlarÄ±
+                    <LogIn size={14} className="text-emerald-500" /> Giriþ-Çýkýþ Kayýtlarý
                   </h4>
                   <div className="space-y-2">
                     {logs.filter(l => l.userId === selectedDayDetails.userId && !l.deleted && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM-dd') === selectedDayDetails.date).length === 0 ? (
-                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu gÃ¼n iÃ§in giriÅŸ/Ã§Ä±kÄ±ÅŸ kaydÄ± yok.</p>
+                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu gün için giriþ/çýkýþ kaydý yok.</p>
                     ) : (
                       logs.filter(l => l.userId === selectedDayDetails.userId && !l.deleted && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM-dd') === selectedDayDetails.date)
                         .sort((a,b) => a.timestamp.toDate() - b.timestamp.toDate())
@@ -4163,8 +4163,8 @@ export default function App() {
                               </p>
                               <p className="text-[10px] text-zinc-500 uppercase truncate">
                                 {log.status === 'error' ? log.errorMessage : 
-                                 log.status === 'pending' ? 'YÃ¶netici onayÄ± bekleniyor' :
-                                 (log.type === 'in' ? 'GiriÅŸ' : 'Ã‡Ä±kÄ±ÅŸ')}
+                                 log.status === 'pending' ? 'Yönetici onayý bekleniyor' :
+                                 (log.type === 'in' ? 'Giriþ' : 'Çýkýþ')}
                               </p>
                               <p className="text-[9px] text-zinc-600 font-mono truncate">{log.ipAddress}</p>
                             </div>
@@ -4190,11 +4190,11 @@ export default function App() {
                 {/* Overtime Section */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-zinc-500 uppercase flex items-center gap-2">
-                    <Clock size={14} className="text-blue-500" /> Mesai KayÄ±tlarÄ±
+                    <Clock size={14} className="text-blue-500" /> Mesai Kayýtlarý
                   </h4>
                   <div className="space-y-2">
                     {overtimeRequests.filter(r => r.userId === selectedDayDetails.userId && r.date === selectedDayDetails.date).length === 0 ? (
-                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu gÃ¼n iÃ§in mesai kaydÄ± yok.</p>
+                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu gün için mesai kaydý yok.</p>
                     ) : (
                       overtimeRequests.filter(r => r.userId === selectedDayDetails.userId && r.date === selectedDayDetails.date).map(req => (
                         <div key={req.id} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800">
@@ -4240,14 +4240,14 @@ export default function App() {
                       >
                         <div className="mb-4 flex justify-center text-red-500"><Trash2 size={32} /></div>
                         <h3 className="text-xl font-bold mb-2">Mesai Silinsin mi?</h3>
-                        <p className="text-sm text-zinc-500 mb-6">{deletingOvertime.date} tarihli {deletingOvertime.hours} saatlik mesai kaydÄ± silinecektir.</p>
+                        <p className="text-sm text-zinc-500 mb-6">{deletingOvertime.date} tarihli {deletingOvertime.hours} saatlik mesai kaydý silinecektir.</p>
                         <div className="flex gap-3">
-                          <button onClick={() => setDeletingOvertime(null)} className="flex-1 rounded-xl bg-zinc-900 py-3 font-bold text-zinc-400">VazgeÃ§</button>
+                          <button onClick={() => setDeletingOvertime(null)} className="flex-1 rounded-xl bg-zinc-900 py-3 font-bold text-zinc-400">Vazgeç</button>
                           <button 
                             onClick={async () => {
                               await overtimeMutation.mutateAsync({ method: 'DELETE', id: deletingOvertime.id! });
                               setDeletingOvertime(null);
-                              setStatus({ type: 'success', message: 'Mesai kaydÄ± silindi.' });
+                              setStatus({ type: 'success', message: 'Mesai kaydý silindi.' });
                             }} 
                             className="flex-1 rounded-xl bg-red-500 py-3 font-bold text-white"
                           >
@@ -4262,11 +4262,11 @@ export default function App() {
                 {/* Leave Section */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-zinc-500 uppercase flex items-center gap-2">
-                    <FileText size={14} className="text-orange-500" /> Ä°zin KayÄ±tlarÄ±
+                    <FileText size={14} className="text-orange-500" /> Ýzin Kayýtlarý
                   </h4>
                   <div className="space-y-2">
                     {leaveRequests.filter(r => r.userId === selectedDayDetails.userId && selectedDayDetails.date >= r.startDate && selectedDayDetails.date <= r.endDate).length === 0 ? (
-                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu gÃ¼n iÃ§in izin kaydÄ± yok.</p>
+                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu gün için izin kaydý yok.</p>
                     ) : (
                       leaveRequests.filter(r => r.userId === selectedDayDetails.userId && selectedDayDetails.date >= r.startDate && selectedDayDetails.date <= r.endDate).map(req => (
                         <div key={req.id} className="flex flex-col p-3 rounded-xl bg-zinc-900/40 border border-zinc-800 space-y-2">
@@ -4276,7 +4276,7 @@ export default function App() {
                                 <FileText size={14} />
                               </div>
                               <div>
-                                <p className="text-sm font-bold capitalize">{req.type === 'report' ? 'Rapor' : (req.type === 'excuse' ? 'Mazeret' : 'YÄ±llÄ±k Ä°zin')}</p>
+                                <p className="text-sm font-bold capitalize">{req.type === 'report' ? 'Rapor' : (req.type === 'excuse' ? 'Mazeret' : 'Yýllýk Ýzin')}</p>
                                 <p className={cn("text-[9px] font-bold uppercase", 
                                   req.status === 'approved' ? "text-emerald-500" : 
                                   req.status === 'pending' ? "text-orange-500" : "text-red-500"
@@ -4296,7 +4296,7 @@ export default function App() {
                               onClick={() => handleViewAttachment(req.attachmentUrl!)}
                               className="flex items-center gap-2 rounded-lg bg-zinc-950 p-2 text-[10px] font-bold text-emerald-400 hover:bg-zinc-900 transition-colors mt-2"
                             >
-                              <Download size={14} /> Rapor Belgesini GÃ¶rÃ¼ntÃ¼le
+                              <Download size={14} /> Rapor Belgesini Görüntüle
                             </button>
                           )}
                           <p className="text-[10px] text-zinc-500 italic">"{req.reason}"</p>
@@ -4324,14 +4324,14 @@ export default function App() {
             >
               <div className="mb-4 flex justify-center text-red-500"><Trash2 size={40} /></div>
               <h3 className="mb-2 text-xl font-bold">Talebi Sil</h3>
-              <p className="mb-4 text-sm text-zinc-500">Bu izin talebini silmek istediÄŸinize emin misiniz? Personele silme nedeni bildirilecektir.</p>
+              <p className="mb-4 text-sm text-zinc-500">Bu izin talebini silmek istediðinize emin misiniz? Personele silme nedeni bildirilecektir.</p>
               
               <div className="mb-6 space-y-1 text-left">
                 <label className="text-[10px] font-bold text-zinc-500 uppercase">Silme Nedeni (Zorunlu)</label>
                 <textarea 
                   value={deletionReason}
                   onChange={(e) => setDeletionReason(e.target.value)}
-                  placeholder="Ä°ptal edilme sebebi..."
+                  placeholder="Ýptal edilme sebebi..."
                   className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2 text-sm focus:border-red-500 focus:outline-none h-20 resize-none"
                 />
               </div>
@@ -4340,7 +4340,7 @@ export default function App() {
                 <button onClick={() => {
                   setDeletingLeave(null);
                   setDeletionReason('');
-                }} className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-bold text-zinc-500">VazgeÃ§</button>
+                }} className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-bold text-zinc-500">Vazgeç</button>
                 <button 
                   onClick={() => handleDeleteLeave(deletingLeave.id!, deletionReason)}
                   disabled={!deletionReason.trim()}
@@ -4379,16 +4379,16 @@ export default function App() {
                   <Trash2 size={32} />
                 </div>
               </div>
-              <h3 className="mb-2 text-xl font-bold text-white">KaydÄ± Sil</h3>
+              <h3 className="mb-2 text-xl font-bold text-white">Kaydý Sil</h3>
               <p className="mb-6 text-sm text-zinc-400">
-                Bu kayÄ±t silinecek, emin misiniz? Bu iÅŸlem geri alÄ±namaz.
+                Bu kayýt silinecek, emin misiniz? Bu iþlem geri alýnamaz.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setDeletingLog(null)}
                   className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-bold text-zinc-400 transition-colors hover:bg-zinc-800"
                 >
-                  VazgeÃ§
+                  Vazgeç
                 </button>
                 <button
                   onClick={() => deleteLog(deletingLog)}
@@ -4415,16 +4415,16 @@ export default function App() {
             >
               <div className="mb-4 flex justify-center text-red-500"><Trash2 size={40} /></div>
               <h3 className="mb-2 text-xl font-bold">Mesaiyi Sil</h3>
-              <p className="mb-6 text-sm text-zinc-500">Bu mesai kaydÄ±nÄ± silmek istediÄŸinize emin misiniz?</p>
+              <p className="mb-6 text-sm text-zinc-500">Bu mesai kaydýný silmek istediðinize emin misiniz?</p>
               <div className="flex gap-3">
-                <button onClick={() => setDeletingOvertime(null)} className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-bold text-zinc-500">VazgeÃ§</button>
+                <button onClick={() => setDeletingOvertime(null)} className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-bold text-zinc-500">Vazgeç</button>
                 <button onClick={async () => {
                   try {
                     await overtimeMutation.mutateAsync({ method: 'DELETE', id: deletingOvertime.id! });
                     setDeletingOvertime(null);
-                    setStatus({ type: 'success', message: 'Mesai kaydÄ± silindi' });
+                    setStatus({ type: 'success', message: 'Mesai kaydý silindi' });
                   } catch (e) {
-                    setStatus({ type: 'error', message: 'Hata oluÅŸtu' });
+                    setStatus({ type: 'error', message: 'Hata oluþtu' });
                   }
                 }} className="flex-1 rounded-xl bg-red-600 py-3 text-sm font-bold text-white">Sil</button>
               </div>
@@ -4457,14 +4457,14 @@ export default function App() {
               </div>
               <h3 className="mb-2 text-xl font-bold text-white">Personeli Sil</h3>
               <p className="mb-6 text-sm text-zinc-400">
-                <strong>{deletingUser.name}</strong> isimli personeli silmek istediÄŸinize emin misiniz? Bu iÅŸlem personelin sisteme giriÅŸini engelleyecektir.
+                <strong>{deletingUser.name}</strong> isimli personeli silmek istediðinize emin misiniz? Bu iþlem personelin sisteme giriþini engelleyecektir.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setDeletingUser(null)}
                   className="flex-1 rounded-xl bg-zinc-900 py-3 text-sm font-bold text-zinc-400 transition-colors hover:bg-zinc-800"
                 >
-                  VazgeÃ§
+                  Vazgeç
                 </button>
                 <button
                   onClick={() => deleteUser(deletingUser.uid)}
@@ -4490,7 +4490,7 @@ export default function App() {
               >
                 <div className="flex items-center justify-between text-white">
                   <h2 className="text-xl font-bold flex items-center gap-2">
-                    <QrCode /> {scanType === 'in' ? 'GiriÅŸ' : 'Ã‡Ä±kÄ±ÅŸ'} TaramasÄ±
+                    <QrCode /> {scanType === 'in' ? 'Giriþ' : 'Çýkýþ'} Taramasý
                   </h2>
                   <button 
                     onClick={() => setShowScanner(false)}
@@ -4503,7 +4503,7 @@ export default function App() {
                   onScanSuccess={handleScanSuccess} 
                   onScanError={(err) => {
                     // Only show fatal errors like permission denied
-                    if (err.includes("izni reddedildi") || err.includes("baÅŸlatÄ±lamadÄ±")) {
+                    if (err.includes("izni reddedildi") || err.includes("baþlatýlamadý")) {
                       setStatus({ type: 'error', message: err });
                       setShowScanner(false);
                     }
@@ -4511,14 +4511,14 @@ export default function App() {
                 />
                 <div className="flex items-center gap-2 rounded-xl bg-orange-500/10 p-4 text-xs text-orange-500">
                   <Wifi size={16} />
-                  <span>Sadece iÅŸ yeri Wi-Fi aÄŸÄ±na baÄŸlÄ±yken tarama yapabilirsiniz.</span>
+                  <span>Sadece iþ yeri Wi-Fi aðýna baðlýyken tarama yapabilirsiniz.</span>
                 </div>
               </motion.div>
             </div>
           )}
         </AnimatePresence>
 
-      {/* Nakliye / Uzaktan GiriÅŸ SeÃ§im Modal */}
+      {/* Nakliye / Uzaktan Giriþ Seçim Modal */}
       <AnimatePresence>
         {showRemoteModal && (
           <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -4529,15 +4529,15 @@ export default function App() {
               transition={{ type: 'spring', damping: 20 }}
               className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-950 overflow-hidden"
             >
-              {/* BaÅŸlÄ±k */}
+              {/* Baþlýk */}
               <div className="flex items-center gap-3 p-5 border-b border-zinc-800">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500 shrink-0">
                   <Truck size={22} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-white">GiriÅŸ YÃ¶ntemi</h3>
+                  <h3 className="font-bold text-white">Giriþ Yöntemi</h3>
                   <p className="text-xs text-zinc-500">
-                    {pendingScanType === 'in' ? 'ðŸŸ¢ GiriÅŸ' : 'ðŸ”´ Ã‡Ä±kÄ±ÅŸ'} iÅŸlemi â€” Bir yÃ¶ntem seÃ§in
+                    {pendingScanType === 'in' ? '?? Giriþ' : '?? Çýkýþ'} iþlemi — Bir yöntem seçin
                   </p>
                 </div>
                 <button onClick={() => { setShowRemoteModal(false); setRemoteManualMode(false); setRemoteNote(''); setRemoteManualTime(''); }} className="text-zinc-500 hover:text-white p-1">
@@ -4546,9 +4546,9 @@ export default function App() {
               </div>
 
               {!remoteManualMode ? (
-                /* === EKRAN 1: YÃ¶ntem SeÃ§imi === */
+                /* === EKRAN 1: Yöntem Seçimi === */
                 <div className="p-5 space-y-3">
-                  {/* QR SeÃ§eneÄŸi */}
+                  {/* QR Seçeneði */}
                   <button
                     onClick={() => {
                       if (pendingScanType) {
@@ -4564,13 +4564,13 @@ export default function App() {
                       <QrCode size={22} />
                     </div>
                     <div>
-                      <p className="font-bold text-white text-sm">QR Kod ile GiriÅŸ</p>
-                      <p className="text-xs text-zinc-500 mt-0.5">Ä°ÅŸ yerindeki QR kodu kameraya okutun</p>
+                      <p className="font-bold text-white text-sm">QR Kod ile Giriþ</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">Ýþ yerindeki QR kodu kameraya okutun</p>
                     </div>
                     <ChevronRight size={18} className="ml-auto text-zinc-600" />
                   </button>
 
-                  {/* Manuel SeÃ§eneÄŸi */}
+                  {/* Manuel Seçeneði */}
                   <button
                     onClick={() => {
                       setRemoteManualMode(true);
@@ -4582,26 +4582,26 @@ export default function App() {
                       <Clock size={22} />
                     </div>
                     <div>
-                      <p className="font-bold text-white text-sm">Manuel GiriÅŸ</p>
-                      <p className="text-xs text-zinc-500 mt-0.5">Saati kendiniz girin (nakliye, saha Ã§alÄ±ÅŸmasÄ±)</p>
+                      <p className="font-bold text-white text-sm">Manuel Giriþ</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">Saati kendiniz girin (nakliye, saha çalýþmasý)</p>
                     </div>
                     <ChevronRight size={18} className="ml-auto text-zinc-600" />
                   </button>
 
                   <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex items-start gap-2">
                     <MapPin size={14} className="text-amber-400 shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-400">Her iki yÃ¶ntemde de konumunuz ve notunuz yÃ¶neticinize iletilir.</p>
+                    <p className="text-xs text-amber-400">Her iki yöntemde de konumunuz ve notunuz yöneticinize iletilir.</p>
                   </div>
                 </div>
               ) : (
-                /* === EKRAN 2: Manuel GiriÅŸ Formu === */
+                /* === EKRAN 2: Manuel Giriþ Formu === */
                 <div className="p-5 space-y-4">
                   <button onClick={() => setRemoteManualMode(false)} className="flex items-center gap-1 text-xs text-zinc-500 hover:text-white transition">
-                    <ChevronLeft size={14} /> Geri dÃ¶n
+                    <ChevronLeft size={14} /> Geri dön
                   </button>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-400 uppercase">{pendingScanType === 'in' ? 'GiriÅŸ Saati' : 'Ã‡Ä±kÄ±ÅŸ Saati'}</label>
+                    <label className="text-xs font-semibold text-zinc-400 uppercase">{pendingScanType === 'in' ? 'Giriþ Saati' : 'Çýkýþ Saati'}</label>
                     <input
                       type="time"
                       value={remoteManualTime}
@@ -4611,11 +4611,11 @@ export default function App() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-400 uppercase">AÃ§Ä±klama / Konum Notu</label>
+                    <label className="text-xs font-semibold text-zinc-400 uppercase">Açýklama / Konum Notu</label>
                     <textarea
                       value={remoteNote}
                       onChange={(e) => setRemoteNote(e.target.value)}
-                      placeholder="Ã–rn: Ankara mal teslimi, ÅŸantiye Ã§alÄ±ÅŸmasÄ±..."
+                      placeholder="Örn: Ankara mal teslimi, þantiye çalýþmasý..."
                       rows={3}
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none resize-none"
                     />
@@ -4626,7 +4626,7 @@ export default function App() {
                       onClick={() => { setShowRemoteModal(false); setRemoteManualMode(false); setRemoteNote(''); }}
                       className="rounded-xl border border-zinc-700 py-3 text-sm font-bold text-zinc-400 hover:bg-zinc-800 transition"
                     >
-                      Ä°ptal
+                      Ýptal
                     </button>
                     <button
                       disabled={remoteSubmitting || !remoteManualTime}
@@ -4634,7 +4634,7 @@ export default function App() {
                         if (!user || !profile || !pendingScanType || !remoteManualTime) return;
                         setRemoteSubmitting(true);
                         try {
-                          // Saat bilgisini bugÃ¼ne uygula
+                          // Saat bilgisini bugüne uygula
                           const [h, m] = remoteManualTime.split(':').map(Number);
                           const clientNow = new Date();
                           clientNow.setHours(h, m, 0, 0);
@@ -4662,7 +4662,7 @@ export default function App() {
 
                           const newDocRef = await attendanceMutation.mutateAsync({ method: 'POST', payload: {
                             ...logPayload,
-                            timestamp: clientNow, // KullanÄ±cÄ±nÄ±n girdiÄŸi saat
+                            timestamp: clientNow, // Kullanýcýnýn girdiði saat
                           } });
 
                           // Optimistik UI
@@ -4673,20 +4673,20 @@ export default function App() {
                           };
                           setLogs(prev => [optimisticLog, ...prev.filter(l => l.id !== newDocRef.id)]);
 
-                          // Bildirim gÃ¶nder
+                          // Bildirim gönder
                           fetch('/api/notify/checkin', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ userId: user.uid, userName: profile.name, type: pendingScanType, isRemote: true, remoteNote: remoteNote || '' })
                           }).catch(() => {});
 
-                          setStatus({ type: 'success', message: `ðŸš› Manuel ${pendingScanType === 'in' ? 'giriÅŸ' : 'Ã§Ä±kÄ±ÅŸ'} talebi alÄ±ndÄ±. YÃ¶netici onayÄ±ndan sonra kesinleÅŸecek.` });
+                          setStatus({ type: 'success', message: `?? Manuel ${pendingScanType === 'in' ? 'giriþ' : 'çýkýþ'} talebi alýndý. Yönetici onayýndan sonra kesinleþecek.` });
                           setShowRemoteModal(false);
                           setRemoteManualMode(false);
                           setRemoteNote('');
                           setRemoteManualTime('');
                         } catch (err) {
-                          setStatus({ type: 'error', message: 'Manuel kayÄ±t sÄ±rasÄ±nda hata oluÅŸtu.' });
+                          setStatus({ type: 'error', message: 'Manuel kayýt sýrasýnda hata oluþtu.' });
                         } finally {
                           setRemoteSubmitting(false);
                         }
@@ -4704,14 +4704,14 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Belge GÃ¶rÃ¼ntÃ¼leyici Modal */}
-      {/* Belge GÃ¶rÃ¼ntÃ¼leyici Modal */}
+      {/* Belge Görüntüleyici Modal */}
+      {/* Belge Görüntüleyici Modal */}
       {viewingAttachment && (
         <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black/90 p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-4xl bg-zinc-900 rounded-2xl overflow-hidden flex flex-col border border-zinc-800 h-[80vh] shadow-2xl">
             <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-950">
               <h3 className="font-bold text-white flex items-center gap-2">
-                <FileText size={18} className="text-emerald-500"/> Belge GÃ¶rÃ¼ntÃ¼leyici
+                <FileText size={18} className="text-emerald-500"/> Belge Görüntüleyici
               </h3>
               <button onClick={() => setViewingAttachment(null)} className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors">
                 <X size={20} />
@@ -4727,13 +4727,13 @@ export default function App() {
                   </div>
                   <h4 className="text-xl font-bold text-white">PDF Belgesi</h4>
                   <p className="text-sm text-zinc-400">
-                    Mobil cihazlarda (Ã¶zellikle iOS) yerleÅŸik PDF gÃ¶rÃ¼ntÃ¼leyiciler tam uyumlu Ã§alÄ±ÅŸmayabilir. Belgeyi eksiksiz gÃ¶rÃ¼ntÃ¼lemek iÃ§in lÃ¼tfen cihazÄ±nÄ±za indirin veya aÃ§Ä±n.
+                    Mobil cihazlarda (özellikle iOS) yerleþik PDF görüntüleyiciler tam uyumlu çalýþmayabilir. Belgeyi eksiksiz görüntülemek için lütfen cihazýnýza indirin veya açýn.
                   </p>
                   <button 
                     onClick={handleDownloadAndOpen}
                     className="mt-4 flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-colors shadow-[0_0_20px_rgba(239,68,68,0.3)]"
                   >
-                    <Download size={18} /> Belgeyi AÃ§ / Ä°ndir
+                    <Download size={18} /> Belgeyi Aç / Ýndir
                   </button>
                 </div>
               )}
@@ -4741,7 +4741,7 @@ export default function App() {
             {viewingAttachment.startsWith('data:image') && (
               <div className="p-4 bg-zinc-950 border-t border-zinc-800 flex justify-end gap-3">
                 <button onClick={handleDownloadAndOpen} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm transition-colors shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-                  <Download size={16} /> Cihaza Ä°ndir
+                  <Download size={16} /> Cihaza Ýndir
                 </button>
               </div>
             )}
@@ -4768,6 +4768,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
