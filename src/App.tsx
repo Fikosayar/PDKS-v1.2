@@ -174,7 +174,7 @@ export default function App() {
   useEffect(() => {
     applyTheme(theme);
     setStoredTheme(theme);
-    // Sistem temas deiince gncelle
+    // Sistem temas deiince güncelle
     if (theme === 'system') {
       return listenSystemTheme(() => applyTheme('system'));
     }
@@ -188,7 +188,7 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [offlineQueueCount, setOfflineQueueCount] = useState(0);
 
-  // Nakliye (uzaktan giri) modu
+  // Nakliye (uzaktan giriş) modu
   const [showRemoteModal, setShowRemoteModal] = useState(false);
   const [remoteNote, setRemoteNote] = useState('');
   const [pendingScanType, setPendingScanType] = useState<'in' | 'out' | null>(null);
@@ -249,7 +249,7 @@ export default function App() {
     // Her ihtimale kar ikisine birden tekrar glce kaydet
     try {
       localStorage.setItem('pdks_device_id', devId);
-      // erezi 10 yl geerli olacak ekilde ayarla
+      // erezi 10 yıl geerli olacak ekilde ayarla
       document.cookie = `pdks_device_id=${devId}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/`;
     } catch (e) {
       console.warn("Tarayc veri kaydetmeyi engelliyor.");
@@ -309,7 +309,7 @@ export default function App() {
     // Sadece aktif personel (silinmemi)
     const activeUsers = allUsers.filter(u => u.role !== 'deleted');
 
-    // Bugnn onayl loglar (pending dahil deil)
+    // Bugnn onayıl loglar (pending dahil deil)
     const todayLogs = logs.filter(l =>
       !l.deleted &&
       l.status !== 'pending' &&
@@ -320,7 +320,7 @@ export default function App() {
 
     // Her personel iin bugnk en son durumu belirle (son log out mu in mi?)
     const userLastAction = new Map<string, string>(); // userId -> 'in' | 'out'
-    const userFirstIn = new Map<string, string>();     // userId -> 'HH:mm' (ilk giri saati)
+    const userFirstIn = new Map<string, string>();     // userId -> 'HH:mm' (ilk giriş saati)
 
     todayLogs
       .sort((a, b) => (a.timestamp.toDate().getTime()) - (b.timestamp.toDate().getTime()))
@@ -345,13 +345,13 @@ export default function App() {
       ).map(r => r.userId)
     );
 
-    // Ge kalanlar: ilk giri saati mesai bandan sonra olan kiiler (kii ba 1 kez)
+    // Ge kalanlar: ilk giriş saati mesai bandan sonra olan kiiler (kii ba 1 kez)
     let lateCount = 0;
     userFirstIn.forEach((time) => {
       if (time > shiftStart) lateCount++;
     });
 
-    // Gelmeyen listesi: aktif, izinli deil, bugn hi giri yapmam
+    // Gelmeyen listesi: aktif, izinli deil, bugn hi giriş yapmam
     const lateIds = new Set<string>();
     userFirstIn.forEach((time, uid) => { if (time > shiftStart) lateIds.add(uid); });
     const absentUserIds = new Set<string>();
@@ -398,7 +398,7 @@ export default function App() {
     
     const userLogs = logs.filter(l => l.userId === user.uid && !l.deleted && l.type === 'in');
     
-    // Her gnn sadece ilk giriini kontrol et
+    // Her gnn sadece ilk girişini kontrol et
     const firstInsPerDay = new Map<string, string>(); // date -> time
     userLogs.forEach(l => {
       const dateStr = format(l.timestamp?.toDate() || new Date(), 'yyyy-MM-dd');
@@ -561,7 +561,7 @@ export default function App() {
     return () => navigator.serviceWorker.removeEventListener('message', handler);
   }, [user, profile]);
 
-  // Kullanc giri yaptktan sonra push abonelii kur
+  // Kullanc giriş yaptktan sonra push abonelii kur
   useEffect(() => {
     if (!user) return;
     const setupPush = async () => {
@@ -582,7 +582,7 @@ export default function App() {
     setupPush();
   }, [user]);
 
-  // evrimd kuyruk saysn gncelle
+  // evrimd kuyruk saysn güncelle
   useEffect(() => {
     getOfflineQueue().then(q => setOfflineQueueCount(q.length));
   }, [user]);
@@ -605,9 +605,9 @@ export default function App() {
     let syncedCount = 0;
     for (const item of queue) {
       try {
-        const { clientTimestamp, ...payload } = item.payload;
-        await attendanceMutation.mutateAsync({ method: 'POST', payload: {
-          ...payload,
+        const { clientTimestamp, ...payıload } = item.payıload;
+        await attendanceMutation.mutateAsync({ method: 'POST', payıload: {
+          ...payıload,
           timestamp: new Date().toISOString(),
           offlineQueued: true,
           clientTimestamp
@@ -620,7 +620,7 @@ export default function App() {
     }
     if (syncedCount > 0) {
       setOfflineQueueCount(0);
-      setStatus({ type: 'success', message: `${syncedCount} evrimd hareket baaryla senkronize edildi!` });
+      setStatus({ type: 'success', message: `${syncedCount} evrimd hareket başarııla senkronize edildi!` });
     }
   }, [user, profile]);
 
@@ -684,7 +684,7 @@ export default function App() {
                     type="button"
                     onClick={() => {
                       navigator.clipboard.writeText(data.currentDevice);
-                      setStatus({ type: 'success', message: 'Cihaz bilgisi kopyalandı.' });
+                      setStatus({ type: 'success', message: 'Cihaz bilgisi kopyalandıı.' });
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
                     title="Kopyala"
@@ -700,7 +700,7 @@ export default function App() {
                 </div>
               )}
               <p className="text-[10px] text-zinc-500 italic">
-                Lütfen yöneticinizden cihaz bilginizi gncellemesini isteyin.
+                Lütfen yöneticinizden cihaz bilginizi güncellemesini isteyin.
               </p>
             </div>
           );
@@ -759,7 +759,7 @@ export default function App() {
       const data = await response.json();
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Yeni personel baaryla eklendi.' });
+        setStatus({ type: 'success', message: 'Yeni personel başarııla eklendii.' });
         (e.target as HTMLFormElement).reset();
       } else {
         setStatus({ type: 'error', message: data.error || 'Personel eklenirken hata olutu.' });
@@ -783,20 +783,20 @@ export default function App() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>PDKS QR Kod Yazdr</title>
-          <style>
+          <title>PDKS QR Kod Yazdır</title>
+          <styıle>
             body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; margin: 0; }
             .container { text-align: center; border: 4px solid #f97316; padding: 60px; border-radius: 40px; background: #fff; }
             h1 { margin-bottom: 30px; color: #f97316; font-size: 32px; }
             svg { width: 400px; height: 400px; }
             p { margin-top: 30px; font-size: 20px; color: #444; font-weight: bold; }
-          </style>
+          </styıle>
         </head>
         <body>
           <div class="container">
             <h1>PDKS Giris/k QR Kodu</h1>
             ${qrSvg}
-            <p>Lütfen giri ve klarda bu kodu okutunuz.</p>
+            <p>Lütfen giriş ve klarda bu kodu okutunuz.</p>
           </div>
           <script>
             window.onload = () => { 
@@ -817,9 +817,9 @@ export default function App() {
     const newSecret = `PDKS-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     try {
       await settingsMutation.mutateAsync({ ...settings, qrSecret: newSecret });
-      setStatus({ type: 'success', message: 'QR kod baaryla güncellendi.' });
+      setStatus({ type: 'success', message: 'QR kod başarııla güncellendi.' });
     } catch (error) {
-      setStatus({ type: 'error', message: 'QR kod gncellenirken hata olutu.' });
+      setStatus({ type: 'error', message: 'QR kod güncellenirken hata olutu.' });
     }
   };
 
@@ -846,16 +846,16 @@ export default function App() {
     try {
       // 1. QR Secret Check
       if (decodedText !== settings.qrSecret) {
-        await attendanceMutation.mutateAsync({ method: 'POST', payload: {
+        await attendanceMutation.mutateAsync({ method: 'POST', payıload: {
           userId: user.uid,
           userName: profile.name,
           timestamp: new Date().toISOString(),
           type: scanType,
           ipAddress: currentIp,
           status: 'error',
-          errorMessage: 'Geersiz QR Kod Okutuldu'
+          errorMessage: 'Geçersiz QR Kod Okutuldu'
         } });
-        setStatus({ type: 'error', message: 'Geersiz QR kod. Lütfen i yerindeki gncel kodu okutun.' });
+        setStatus({ type: 'error', message: 'Geçersiz QR kod. Lütfen i yerindeki güncel kodu okutun.' });
         isProcessingScan.current = false;
         return;
       }
@@ -863,7 +863,7 @@ export default function App() {
       // 2. IP Check (Nakliye yetkisi olan personel iin IP kontrol atla)
       const hasRemotePermission = profile.canRemoteCheckIn === true;
       if (settings.officeIp && currentIp !== settings.officeIp && !hasRemotePermission) {
-        await attendanceMutation.mutateAsync({ method: 'POST', payload: {
+        await attendanceMutation.mutateAsync({ method: 'POST', payıload: {
           userId: user.uid,
           userName: profile.name,
           timestamp: new Date().toISOString(),
@@ -894,7 +894,7 @@ export default function App() {
         console.warn("Geolocation denied or failed");
       }
 
-      const logPayload: any = {
+      const logPayıload: any = {
         userId: user.uid,
         userName: profile.name,
         type: scanType,
@@ -910,7 +910,7 @@ export default function App() {
         const queueItem: OfflineQueueItem = {
           id: `offline-${Date.now()}-${Math.random().toString(36).substring(2)}`,
           type: 'attendance',
-          payload: { ...logPayload, clientTimestamp: new Date().toISOString() },
+          payıload: { ...logPayıload, clientTimestamp: new Date().toISOString() },
           createdAt: new Date().toISOString()
         };
         await addToOfflineQueue(queueItem);
@@ -920,15 +920,15 @@ export default function App() {
       } else {
         const clientNow = new Date();
         // Firestore'a yaz
-        const newDocRef = await attendanceMutation.mutateAsync({ method: 'POST', payload: {
-          ...logPayload,
+        const newDocRef = await attendanceMutation.mutateAsync({ method: 'POST', payıload: {
+          ...logPayıload,
           timestamp: new Date().toISOString(),
         } });
 
         // OPTMSTK UI: Snapshot beklemeden annda state'e ekle
         const optimisticLog: AttendanceLog = {
           id: newDocRef.id,
-          ...logPayload,
+          ...logPayıload,
           timestamp: { toDate: () => clientNow } as any,
         };
         setLogs(prev => [optimisticLog, ...prev.filter(l => l.id !== newDocRef.id)]);
@@ -938,7 +938,7 @@ export default function App() {
           await checkAndCreateAutoOvertime(user.uid, profile.name, clientNow, 'out');
         }
 
-        // Yöneticiye giri bildirimi gnder
+        // Yöneticiye giriş bildirimi gnder
         fetch('/api/notify/checkin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -951,7 +951,7 @@ export default function App() {
           })
         }).catch(() => {});
 
-        setStatus({ type: 'success', message: `${isRemote ? '?? Nakliye: ' : ''}${scanType === 'in' ? 'Giris' : 'k'} ileminiz baaryla kaydedildi.` });
+        setStatus({ type: 'success', message: `${isRemote ? '?? Nakliye: ' : ''}${scanType === 'in' ? 'Giris' : 'k'} ileminiz başarııla kaydedildi.` });
       }
 
 
@@ -1002,7 +1002,7 @@ export default function App() {
       await settingsMutation.mutateAsync(newSettings);
       setStatus({ type: 'success', message: 'Ayarlar güncellendi.' });
     } catch (error) {
-      setStatus({ type: 'error', message: 'Ayarlar gncellenirken hata olutu.' });
+      setStatus({ type: 'error', message: 'Ayarlar güncellenirken hata olutu.' });
     }
   };
 
@@ -1155,13 +1155,13 @@ export default function App() {
     const isAuthorized = isSystemAdmin || isManagerOf || isSelf;
 
     if (!isAuthorized) {
-      setStatus({ type: 'error', message: 'Bu personelin kaydn dzenleme yetkiniz yok.' });
+      setStatus({ type: 'error', message: 'Bu personelin kaydn düzenleme yetkiniz yok.' });
       return;
     }
 
     const timestamp = new Date(`${manualLogDate}T${manualLogTime}:00`);
     if (isNaN(timestamp.getTime())) {
-      setStatus({ type: 'error', message: 'Geersiz tarih veya saat.' });
+      setStatus({ type: 'error', message: 'Geçersiz tarih veya saat.' });
       return;
     }
     const auditInfo = `Manuel: ${profile.name}`;
@@ -1171,8 +1171,8 @@ export default function App() {
       const newStatus = isAdminOrManager ? 'success' : 'pending';
 
       if (editingLog?.id) {
-        // Mevcut kayd gncelle
-        await attendanceMutation.mutateAsync({ method: 'PUT', id: editingLog.id, payload: {
+        // Mevcut kayd güncelle
+        await attendanceMutation.mutateAsync({ method: 'PUT', id: editingLog.id, payıload: {
           timestamp: timestamp,
           type: manualLogType,
           ipAddress: auditInfo,
@@ -1182,7 +1182,7 @@ export default function App() {
         setStatus({ type: 'success', message: 'Kayt güncellendi.' });
       } else {
         // Yeni kayt ekle
-        await attendanceMutation.mutateAsync({ method: 'POST', payload: {
+        await attendanceMutation.mutateAsync({ method: 'POST', payıload: {
           userId: targetId,
           userName: targetUser.name,
           timestamp: timestamp,
@@ -1193,7 +1193,7 @@ export default function App() {
           isRemote: !isAdminOrManager,
           ...(isAdminOrManager ? {} : { remoteNote: 'Gemi Kayt (Onay Bekliyor)' }),
         } });
-        setStatus({ type: 'success', message: isAdminOrManager ? 'Kayt eklendi.' : 'Kayt eklendi, yonetici onay bekleniyor.' });
+        setStatus({ type: 'success', message: isAdminOrManager ? 'Kayt eklendii.' : 'Kayt eklendii, yonetici onay bekleniyor.' });
         
         if (!isAdminOrManager) {
           fetch('/api/notify/checkin', {
@@ -1226,7 +1226,7 @@ export default function App() {
       });
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Kayt baaryla silindi.' });
+        setStatus({ type: 'success', message: 'Kayt başarııla silindii.' });
         setDeletingLog(null);
         setShowManualLogModal(false);
       } else {
@@ -1254,7 +1254,7 @@ export default function App() {
     if (timestamp.getTime() > overtimeThresholdTime) {
       const dateStr = format(timestamp, 'yyyy-MM-dd');
       
-      // Check if an overtime request already exists for this date
+      // Check if an overtime request alıready exists for this date
       const existing = overtimeRequests.find(r => r.userId === userId && r.date === dateStr);
       if (existing) return;
 
@@ -1269,7 +1269,7 @@ export default function App() {
       if (overtimeHours <= 0) return;
 
       try {
-        await overtimeMutation.mutateAsync({ method: 'POST', payload: { userName, managerId: effectiveManagerId, date: dateStr, hours: overtimeHours, description: 'Otomatik Sistem Kayd (' + format(timestamp, 'HH:mm') + ' k)', status: 'pending' } });
+        await overtimeMutation.mutateAsync({ method: 'POST', payıload: { userName, managerId: effectiveManagerId, date: dateStr, hours: overtimeHours, description: 'Otomatik Sistem Kayd (' + format(timestamp, 'HH:mm') + ' k)', status: 'pending' } });
       } catch (error) {
         console.error("Auto overtime error:", error);
       }
@@ -1300,12 +1300,12 @@ export default function App() {
     const reason = (formData.get('reason') as string).trim();
 
     if (!reason) {
-      setStatus({ type: 'error', message: 'Lütfen bir aklama giriniz.' });
+      setStatus({ type: 'error', message: 'Lütfen bir aklama girişniz.' });
       return;
     }
 
     if (isNaN(days) || days <= 0) {
-      setStatus({ type: 'error', message: 'Lütfen geerli bir gn says giriniz.' });
+      setStatus({ type: 'error', message: 'Lütfen geerli bir gn says girişniz.' });
       return;
     }
 
@@ -1332,7 +1332,7 @@ export default function App() {
         });
       }
 
-      await leaveMutation.mutateAsync({ method: 'POST', payload: {
+      await leaveMutation.mutateAsync({ method: 'POST', payıload: {
         userName: profile.name,
         managerId: profile.managerId || 'admin_initial',
         startDate, endDate, days, reason,
@@ -1404,12 +1404,12 @@ export default function App() {
     const description = formData.get('description') as string;
 
     if (isNaN(hours) || hours <= 0) {
-      setStatus({ type: 'error', message: 'Lütfen geerli bir saat giriniz.' });
+      setStatus({ type: 'error', message: 'Lütfen geerli bir saat girişniz.' });
       return;
     }
 
     try {
-      await overtimeMutation.mutateAsync({ method: 'POST', payload: { userName: profile.name, managerId: profile.managerId || 'admin_initial', date, hours, description, status: 'pending' } });
+      await overtimeMutation.mutateAsync({ method: 'POST', payıload: { userName: profile.name, managerId: profile.managerId || 'admin_initial', date, hours, description, status: 'pending' } });
       // Yöneticiye push bildirimi gnder
       fetch('/api/notify/newrequest', {
         method: 'POST',
@@ -1446,7 +1446,7 @@ export default function App() {
         })
       }).catch(() => {});
 
-      setStatus({ type: 'success', message: `Talep ${action === 'approved' ? 'onayland' : 'reddedildi'}.` });
+      setStatus({ type: 'success', message: `Talep ${action === 'approved' ? 'onayılandı' : 'reddedildii'}.` });
     } catch (error) {
       setStatus({ type: 'error', message: 'lem srasnda hata olutu.' });
     }
@@ -1487,7 +1487,7 @@ export default function App() {
         })
       }).catch(() => {});
 
-      setStatus({ type: 'success', message: 'Izin talebi silindi ve bakiye iade edildi.' });
+      setStatus({ type: 'success', message: 'Izin talebi silindii ve bakiye iade edildi.' });
       setDeletingLeave(null);
       setDeletionReason('');
     } catch (error) {
@@ -1509,7 +1509,7 @@ export default function App() {
     };
 
     try {
-      await leaveMutation.mutateAsync({ method: 'PUT', id: editingLeave.id!, payload: updates });
+      await leaveMutation.mutateAsync({ method: 'PUT', id: editingLeave.id!, payıload: updates });
       setStatus({ type: 'success', message: 'Izin talebi güncellendi.' });
       setEditingLeave(null);
     } catch (error) {
@@ -1578,12 +1578,12 @@ export default function App() {
       });
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'ŞŞifreniz baaryla güncellendi.' });
+        setStatus({ type: 'success', message: 'Şifreniz başarııla güncellendi.' });
         setShowPasswordChangeModal(false);
         setNewPassword('');
       } else {
         const data = await response.json();
-        setStatus({ type: 'error', message: data.error || 'ŞŞifre gncellenirken bir hata olutu.' });
+        setStatus({ type: 'error', message: data.error || 'Şifre güncellenirken bir hata olutu.' });
       }
     } catch (error) {
       console.error("Password change error:", error);
@@ -1715,20 +1715,20 @@ export default function App() {
                 <input 
                   name="personnelId"
                   required
-                  placeholder="ID giriniz"
+                  placeholder="ID girişniz"
                   className="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 pl-12 pr-4 py-3.5 text-sm font-medium placeholder:text-zinc-700 focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 focus:outline-none transition-all"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">ŞŞifre</label>
+              <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Şifre</label>
               <div className="relative">
                 <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
                 <input 
                   name="password"
                   type="password"
                   required
-                  placeholder="ŞŞifre giriniz"
+                  placeholder="Şifre girişniz"
                   className="w-full rounded-xl border border-zinc-800 bg-zinc-950/80 pl-12 pr-4 py-3.5 text-sm font-medium placeholder:text-zinc-700 focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 focus:outline-none transition-all"
                 />
               </div>
@@ -1783,7 +1783,7 @@ export default function App() {
               <p className="text-xs text-zinc-500">{profile?.role === 'admin' ? 'Yönetici' : 'Personel'}</p>
             </div>
 
-            {/* Tema Deitirici */}
+            {/* Tema Değiştirici */}
             <button
               onClick={cycleTheme}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900/10 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-orange-500"
@@ -1857,7 +1857,7 @@ export default function App() {
                                     '/takvim': '/home',
                                     '/hareketler': '/movements',
                                     '/izinler': '/leaves',
-                                    '/onaylar': '/approvals',
+                                    '/onayılar': '/approvals',
                                     '/mesai': '/leaves',
                                     '/profil': '/profile',
                                   };
@@ -1984,7 +1984,7 @@ export default function App() {
               <button
                 onClick={() => {
                   if (profile?.canRemoteCheckIn) {
-                    // Uzaktan yetkili: her zaman yntem seim modal' gster
+                    // Uzaktan yetkili: her zaman yntem seim modal' göster
                     setPendingScanType('in');
                     setShowRemoteModal(true);
                   } else {
@@ -2062,7 +2062,7 @@ export default function App() {
                 <AlertTriangle size={24} className="text-red-500 shrink-0" />
                 <div>
                   <p className="text-sm font-bold text-red-500">Ge Kalma Uyars</p>
-                  <p className="text-xs text-red-500/70">Bu ay ierisinde <strong>{userLateCountThisMonth} kez</strong> mesai balang saati ({settings?.shiftStart || '08:00'}) sonrasnda giri yaptnz.</p>
+                  <p className="text-xs text-red-500/70">Bu ay ierisinde <strong>{userLateCountThisMonth} kez</strong> mesai balang saati ({settings?.shiftStart || '08:00'}) sonrasnda giriş yaptnz.</p>
                 </div>
               </div>
             )}
@@ -2090,7 +2090,7 @@ export default function App() {
                   <Shield size={16} />
                   <span className="text-xs font-semibold uppercase tracking-wider">Gvenlik</span>
                 </div>
-                <p className="text-sm font-medium theme-text">QR + IP Korumalı</p>
+                <p className="text-sm font-medium theme-text">QR + IP Korumalıı</p>
                 <p className="text-[10px] text-zinc-600">Sistem Durumu</p>
               </div>
             </div>
@@ -2309,7 +2309,7 @@ export default function App() {
                 </div>
 
                 <div className="rounded-2xl border border-zinc-900 bg-zinc-900/10 overflow-hidden">
-                  <div className="p-3 border-b border-zinc-900 bg-zinc-900/40 text-[10px] font-bold text-zinc-500 uppercase">Detayl Liste</div>
+                  <div className="p-3 border-b border-zinc-900 bg-zinc-900/40 text-[10px] font-bold text-zinc-500 uppercase">Detayıl Liste</div>
                   <div className="max-h-[400px] overflow-y-auto">
                     {/* Desktop Table View */}
                     <table className="hidden md:table w-full text-left">
@@ -2482,11 +2482,11 @@ export default function App() {
           return (
             <>
               <div className="rounded-2xl border border-zinc-900 bg-zinc-900/30 p-4 flex flex-col items-center justify-center">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase">Aylk Toplam Mesai</p>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase">Ayılk Toplam Mesai</p>
                 <p className="text-2xl font-black text-blue-500">{totalOvertimeHours.toFixed(1)} <span className="text-xs font-normal">Saat</span></p>
               </div>
               <div className="rounded-2xl border border-zinc-900 bg-zinc-900/30 p-4 flex flex-col items-center justify-center">
-                <p className="text-[10px] font-bold text-zinc-500 uppercase">Aylk Toplam Izin</p>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase">Ayılk Toplam Izin</p>
                 <p className="text-2xl font-black text-orange-500">{totalLeaveDays} <span className="text-xs font-normal">Gn</span></p>
               </div>
               <div className="rounded-2xl border border-zinc-900 bg-zinc-900/30 p-4 flex flex-col items-center justify-center">
@@ -2663,7 +2663,7 @@ export default function App() {
 
                   <div className="mt-12 space-y-4">
                     <h4 className="text-lg font-bold flex items-center gap-2">
-                      <Clock size={20} className="text-orange-500" /> Tm Giris/k Kaytlar
+                      <Clock size={20} className="text-orange-500" /> Tm Giris/k Kayıtlıar
                     </h4>
                     <div className="overflow-hidden rounded-2xl border border-zinc-900">
                       {/* Desktop Table */}
@@ -2802,7 +2802,7 @@ export default function App() {
                     <input 
                       name="name"
                       required
-                      placeholder="rn: Ahmet Ylmaz"
+                      placeholder="ÖÖrn: Ahmet Yılmaz"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -2810,7 +2810,7 @@ export default function App() {
                     <label className="text-xs font-semibold text-zinc-500 uppercase">nvan / Pozisyon</label>
                     <input 
                       name="title"
-                      placeholder="rn: Yazlm Gelitirici, Blm Mdr"
+                      placeholder="ÖÖrn: Yazılım Geliştirici, Bölüm Müdür"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -2819,12 +2819,12 @@ export default function App() {
                     <input 
                       name="personnelId"
                       required
-                      placeholder="rn: ahmet123"
+                      placeholder="Örn: ahmet123"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">ŞŞifre</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Şifre</label>
                     <input 
                       name="password"
                       type="password"
@@ -2857,7 +2857,7 @@ export default function App() {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">Yllk Izin Bakiyesi (Gn)</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Yıllk Izin Bakiyesi (Gn)</label>
                     <input 
                       name="leaveBalance"
                       type="number"
@@ -2889,7 +2889,7 @@ export default function App() {
                     <input 
                       name="allowedDevice"
                       type="text"
-                      placeholder="rn: iPhone, Samsung, SM-G991B"
+                      placeholder="ÖÖrn: iPhone, Samsung, SM-G991B"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -2898,7 +2898,7 @@ export default function App() {
                     <input 
                       name="deviceId"
                       type="text"
-                      placeholder="Otomatik tanmlanr veya ID girin"
+                      placeholder="Otomatik tanımlanır veya ID girişn"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -2913,9 +2913,9 @@ export default function App() {
                       <div>
                         <p className="text-sm font-semibold text-white flex items-center gap-2">
                           <Truck size={14} className="text-orange-500" />
-                          Nakliye / Uzaktan Giris Yetkisi
+                          Nakliye / Uzaktan Giriş Yetkisi
                         </p>
-                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis dndan (nakliyede) da giri-k yapabilir. Konumu kaydedilir, yoneticileri bildirim alr.</p>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis dışından (nakliyede) da girişş-çıkış yapabilir. Konumu kaydedilir, yöneticileri bildirim alır.</p>
                       </div>
                     </label>
                   </div>
@@ -3063,15 +3063,15 @@ export default function App() {
                   />
                 </div>
                 <div className="text-center">
-                  <p className="font-bold text-lg"> Yeri Giris QR Kodu</p>
-                  <p className="text-sm text-zinc-500">Bu kodu yazdrp i yerine asabilirsiniz.</p>
+                  <p className="font-bold text-lg"> Yerinde Giriş QR Kodu</p>
+                  <p className="text-sm text-zinc-500">Bu kodu yazdırıp iş yerine asabilirsiniz.</p>
                 </div>
                 <div className="flex gap-3">
                   <button 
                     onClick={handlePrintQR}
                     className="flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-2 text-sm font-bold hover:bg-orange-600 transition-colors"
                   >
-                    <Printer size={18} /> Yazdr
+                    <Printer size={18} /> Yazdır
                   </button>
                   <button 
                     onClick={regenerateQRSecret}
@@ -3085,18 +3085,18 @@ export default function App() {
               <div className="space-y-6">
                 <section className="rounded-3xl border border-zinc-900 bg-zinc-900/20 p-6">
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <SettingsIcon size={20} className="text-orange-500" /> Ayarlar Gncelle
+                    <SettingsIcon size={20} className="text-orange-500" /> Ayarları Güncelle
                   </h3>
                   <form onSubmit={updateSettings} className="space-y-6">
                     <div className="space-y-4">
-                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">irket Genel Bilgileri</h4>
+                      <h4 className="text-xs font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-800 pb-1">Şirket Genel Bilgileri</h4>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-zinc-500 uppercase">irket Ad</label>
+                          <label className="text-xs font-semibold text-zinc-500 uppercase">Şirket Ad</label>
                           <input 
                             name="companyName"
                             defaultValue={settings?.companyName}
-                            placeholder="rn: ABC Yazlm Ltd. ti."
+                            placeholder="ÖÖrn: ABC Yazılımazlm Ltd. ti."
                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                           />
                         </div>
@@ -3107,13 +3107,13 @@ export default function App() {
                             defaultValue={settings?.workDaysPerWeek || 6}
                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                           >
-                            <option value="5">5 Gn</option>
+                            <option value="5">5 Gün</option>
                             <option value="6">6 Gn</option>
                           </select>
                         </div>
                         <div className="space-y-2">
                           <label className="text-xs font-semibold text-zinc-500 uppercase flex items-center gap-1">
-                            Hesaplama Tolerans (Dk) <Info size={12} className="text-zinc-600" title="Ge giri/erken k/fazla mesai tolerans" />
+                            Hesaplama Tolerans (Dk) <Info size={12} className="text-zinc-600" title="Ge giriş/erken k/fazla mesai tolerans" />
                           </label>
                           <input 
                             name="roundingThresholdMinutes"
@@ -3157,7 +3157,7 @@ export default function App() {
                           <input 
                             name="officeIp"
                             defaultValue={settings?.officeIp}
-                            placeholder="rn: 176.234.12.34"
+                            placeholder="ÖÖrn: 176.234.12.34"
                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                           />
                         </div>
@@ -3167,7 +3167,7 @@ export default function App() {
                             name="qrSecret"
                             value={settings?.qrSecret || ''}
                             onChange={(e) => setSettings(prev => prev ? { ...prev, qrSecret: e.target.value } : null)}
-                            placeholder="QR ierii ne olmal?"
+                            placeholder="QR içeriği ne olmalı?"
                             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                           />
                         </div>
@@ -3222,7 +3222,7 @@ export default function App() {
                           </div>
                         ))}
                         {(settings?.breakRules || []).length === 0 && (
-                          <p className="text-[10px] text-zinc-600 italic text-center py-4">Henz mola kural tanmlanmad. Standart kanun kurallar uygulanr.</p>
+                          <p className="text-[10px] text-zinc-600 italic text-center py-4">Henüz mola kuralı tanımlanmadı. Standart kanun kuralları uygulanır.</p>
                         )}
                       </div>
                     </div>
@@ -3350,7 +3350,7 @@ export default function App() {
                           img.onerror = () => reject(new Error('Resim yklenemedi.'));
                           img.src = objectUrl;
                         });
-                        await userMutation.mutateAsync({ method: 'PUT', id: user.uid, payload: { avatarUrl: avatarBase64 } });
+                        await userMutation.mutateAsync({ method: 'PUT', id: user.uid, payıload: { avatarUrl: avatarBase64 } });
                         setProfile(prev => prev ? { ...prev, avatarUrl: avatarBase64 } : prev);
                         setStatus({ type: 'success', message: 'Profil fotoraf güncellendi.' });
                       } catch (err: any) {
@@ -3377,7 +3377,7 @@ export default function App() {
                     className="flex items-center gap-1.5 rounded-xl bg-orange-500/10 px-4 py-2 text-xs font-bold text-orange-500 hover:bg-orange-500/20 transition-colors disabled:opacity-50"
                   >
                     <Camera size={13} />
-                    {profile?.avatarUrl ? 'Deitir' : 'Fotoraf Ekle'}
+                    {profile?.avatarUrl ? 'Değiştir' : 'Fotoraf Ekle'}
                   </button>
                   {profile?.avatarUrl && (
                     <button
@@ -3385,9 +3385,9 @@ export default function App() {
                         if (!user) return;
                         if (!window.confirm('Profil fotoraf silinsin mi?')) return;
                         try {
-                          await userMutation.mutateAsync({ method: 'PUT', id: user.uid, payload: { avatarUrl: null } });
+                          await userMutation.mutateAsync({ method: 'PUT', id: user.uid, payıload: { avatarUrl: null } });
                           setProfile(prev => prev ? { ...prev, avatarUrl: undefined } : prev);
-                          setStatus({ type: 'success', message: 'Profil fotoraf silindi.' });
+                          setStatus({ type: 'success', message: 'Profil fotoraf silindii.' });
                         } catch (err: any) {
                           setStatus({ type: 'error', message: 'Silinemedi: ' + err.message });
                         }
@@ -3412,7 +3412,7 @@ export default function App() {
                   </p>
                 </div>
                 <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-4 space-y-1 md:col-span-2">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Resmi Yllk Izin Bakiyesi</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Resmi Yıllk Izin Bakiyesi</p>
                   <div className="flex items-center justify-between">
                     <p className="text-2xl font-black text-orange-500">
                       {getEffectiveLeaveBalance(profile)} GN
@@ -3430,7 +3430,7 @@ export default function App() {
                   onClick={() => setShowPasswordChangeModal(true)}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-orange-500/10 py-4 font-bold text-orange-500 transition-colors hover:bg-orange-500/20"
                 >
-                  <Key size={20} /> ŞŞifreyi Deitir
+                  <Key size={20} /> Şifreyi Değiştir
                 </button>
                 <button 
                   onClick={handleLogout}
@@ -3455,7 +3455,7 @@ export default function App() {
               >
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Edit className="text-orange-500" /> Personel Dzenle
+                    <Edit className="text-orange-500" /> Personel Düzenle
                   </h2>
                   <button 
                     onClick={() => setEditingUser(null)}
@@ -3502,13 +3502,13 @@ export default function App() {
                               img.onerror = () => reject(new Error('Resim yklenemedi.'));
                               img.src = objectUrl;
                             });
-                            await userMutation.mutateAsync({ method: 'PUT', id: editingUser.uid, payload: { avatarUrl: avatarBase64 } });
+                            await userMutation.mutateAsync({ method: 'PUT', id: editingUser.uid, payıload: { avatarUrl: avatarBase64 } });
                             setEditingUser(prev => prev ? { ...prev, avatarUrl: avatarBase64 } : prev);
                             // Personele bildirim gnder
                             await fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pdks_token') }, body: JSON.stringify({
                               userId: editingUser.uid,
                               title: 'Profil Fotorafnz Güncellendi',
-                              message: `${profile?.name || 'Yöneticiniz'} profil fotorafnz gncelledi.`,
+                              message: `${profile?.name || 'Yöneticiniz'} profil fotorafnz güncelledi.`,
                               type: 'info',
                               read: false,
                               link: '/profile',
@@ -3532,14 +3532,14 @@ export default function App() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm mb-1">Profil Fotoraf</p>
-                    <p className="text-[11px] text-zinc-500 mb-3">Resmin zerine tklayarak fotoraf deitirebilirsiniz. Deiiklik personele bildirim olarak iletilir.</p>
+                    <p className="text-[11px] text-zinc-500 mb-3">Resmin zerine tklayarak fotoraf değiştirebilirsiniz. Değişiklik personele bildirim olarak iletilir.</p>
                     {editingUser.avatarUrl && (
                       <button
                         type="button"
                         onClick={async () => {
                           if (!window.confirm('Profil fotoraf silinsin mi?')) return;
                           try {
-                            await userMutation.mutateAsync({ method: 'PUT', id: editingUser.uid, payload: { avatarUrl: null } });
+                            await userMutation.mutateAsync({ method: 'PUT', id: editingUser.uid, payıload: { avatarUrl: null } });
                             setEditingUser(prev => prev ? { ...prev, avatarUrl: undefined } : prev);
                             await fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pdks_token') }, body: JSON.stringify({
                               userId: editingUser.uid,
@@ -3550,7 +3550,7 @@ export default function App() {
                               link: '/profile',
                               createdAt: new Date().toISOString(),
                             }) }).catch(() => {});
-                            setStatus({ type: 'success', message: 'Fotoraf silindi.' });
+                            setStatus({ type: 'success', message: 'Fotoraf silindii.' });
                           } catch (err: any) {
                             setStatus({ type: 'error', message: 'Silinemedi: ' + err.message });
                           }
@@ -3578,7 +3578,7 @@ export default function App() {
                     <input 
                       name="title"
                       defaultValue={editingUser.title || ''}
-                      placeholder="rn: Blm Mdr, Tekniker"
+                      placeholder="Örn: Bölüm Müdür, Tekniker"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -3609,7 +3609,7 @@ export default function App() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-semibold text-zinc-500 uppercase flex items-center justify-between">
-                      Yllk Izin Bakiyesi (Gn)
+                      Yıllk Izin Bakiyesi (Gn)
                       <span className="text-[10px] text-orange-500 lowercase font-normal italic">Mevcut: {getEffectiveLeaveBalance(editingUser)} Gn</span>
                     </label>
                     <input 
@@ -3644,10 +3644,10 @@ export default function App() {
                       name="allowedDevice"
                       type="text"
                       defaultValue={editingUser.allowedDevice || ''}
-                      placeholder="rn: iPhone, Samsung"
+                      placeholder="ÖÖrn: iPhone, Samsung"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
-                    <p className="text-[10px] text-zinc-600">Bo braklrsa her cihazdan giri yapabilir.</p>
+                    <p className="text-[10px] text-zinc-600">Bo braklrsa her cihazdan giriş yapabilir.</p>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -3667,7 +3667,7 @@ export default function App() {
                                 updates: { deviceId: '' }
                               })
                             }).then(() => {
-                              setStatus({ type: 'success', message: 'Cihaz kilidi kaldrld.' });
+                              setStatus({ type: 'success', message: 'Cihaz kilidi kaldırıld.' });
                             });
                           }}
                           className="text-[10px] font-bold text-red-500 hover:underline"
@@ -3684,7 +3684,7 @@ export default function App() {
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
-                  {/* Nakliye / Uzaktan giri yetkisi */}
+                  {/* Nakliye / Uzaktan giriş yetkisi */}
                   <div className="md:col-span-2">
                     <label className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 cursor-pointer hover:border-orange-500/50 transition-colors">
                       <input 
@@ -3697,19 +3697,19 @@ export default function App() {
                       <div>
                         <p className="text-sm font-semibold text-white flex items-center gap-2">
                           <Truck size={14} className="text-orange-500" />
-                          Nakliye / Uzaktan Giris Yetkisi
+                          Nakliye / Uzaktan Giriş Yetkisi
                         </p>
-                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis dndan (nakliyede) da giri-k yapabilir. Konumu kaydedilir, yoneticileri bildirim alr.</p>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">Bu personel ofis dışından (nakliyede) da girişş-çıkış yapabilir. Konumu kaydedilir, yöneticileri bildirim alır.</p>
                       </div>
                     </label>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-zinc-500 uppercase">ŞŞifre Sfrla (Yeni ŞŞifre)</label>
+                    <label className="text-xs font-semibold text-zinc-500 uppercase">Şifre Sfrla (Yeni Şifre)</label>
                     <input 
                       name="password"
                       type="password"
-                      placeholder="Deitirmek istemiyorsanz bo brakn"
+                      placeholder="Değiştirmek istemiyorsanz bo brakn"
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none"
                     />
                   </div>
@@ -3725,7 +3725,7 @@ export default function App() {
                       Sil
                     </button>
                     <button className="flex-[2] rounded-xl bg-orange-500 py-3 font-bold text-white transition-colors hover:bg-orange-600">
-                      Deiiklikleri Kaydet
+                      Değişiklikleri Kaydet
                     </button>
                   </div>
                 </form>
@@ -3755,9 +3755,9 @@ export default function App() {
                 <div>
                   <h3 className="text-xl font-bold flex items-center gap-2">
                     <Clock4 size={24} className="text-orange-500" />
-                    {editingLog ? 'Kayd Dzenle' : 'Manuel Kayt Ekle'}
+                    {editingLog ? 'Kayd Düzenle' : 'Manuel Kayt Ekle'}
                   </h3>
-                  {/* Hedef kii adn gster */}
+                  {/* Hedef kii adn göster */}
                   {(() => {
                     const tid = selectedDayDetails?.userId || selectedPersonnelId || editingLog?.userId;
                     const tName = tid ? (allUsers.find(u => u.uid === tid)?.name || (profile?.uid === tid ? profile?.name : null)) : null;
@@ -3851,7 +3851,7 @@ export default function App() {
               className="relative w-full max-w-lg rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-2xl"
             >
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-xl font-bold">Izin Talebini Dzenle</h3>
+                <h3 className="text-xl font-bold">Izin Talebini Düzenle</h3>
                 <button onClick={() => setEditingLeave(null)} className="rounded-full bg-zinc-900 p-2 text-zinc-500 hover:bg-zinc-800"><X size={20} /></button>
               </div>
               <form onSubmit={handleUpdateLeave} className="space-y-4">
@@ -3873,7 +3873,7 @@ export default function App() {
                   <label className="text-xs font-semibold text-zinc-500 uppercase">Durum</label>
                   <select name="status" defaultValue={editingLeave.status} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none appearance-none">
                     <option value="pending">Bekliyor</option>
-                    <option value="approved">Onayland</option>
+                    <option value="approved">Onayılandı</option>
                     <option value="rejected">Reddedildi</option>
                   </select>
                 </div>
@@ -3913,13 +3913,13 @@ export default function App() {
               className="relative w-full max-w-lg rounded-3xl border border-zinc-900 bg-zinc-950 p-6 shadow-2xl"
             >
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-xl font-bold">Mesai Dzenle</h3>
+                <h3 className="text-xl font-bold">Mesai Düzenle</h3>
                 <button onClick={() => setEditingOvertime(null)} className="rounded-full bg-zinc-900 p-2 text-zinc-500 hover:bg-zinc-800"><X size={20} /></button>
               </div>
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
-                await overtimeMutation.mutateAsync({ method: 'PUT', id: editingOvertime.id!, payload: {
+                await overtimeMutation.mutateAsync({ method: 'PUT', id: editingOvertime.id!, payıload: {
                   date: formData.get('date'),
                   hours: Number(formData.get('hours')),
                   description: formData.get('description'),
@@ -3940,7 +3940,7 @@ export default function App() {
                   <label className="text-xs font-semibold text-zinc-500 uppercase">Durum</label>
                   <select name="status" defaultValue={editingOvertime.status} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none appearance-none">
                     <option value="pending">Bekliyor</option>
-                    <option value="approved">Onayland</option>
+                    <option value="approved">Onayılandı</option>
                     <option value="rejected">Reddedildi</option>
                   </select>
                 </div>
@@ -3953,11 +3953,11 @@ export default function App() {
                     type="button"
                     onClick={async () => {
                       if (!editingOvertime?.id) return;
-                      await overtimeMutation.mutateAsync({ method: 'PUT', id: editingOvertime.id, payload: {
+                      await overtimeMutation.mutateAsync({ method: 'PUT', id: editingOvertime.id, payıload: {
                         deleted: true,
                       } });
                       setEditingOvertime(null);
-                      setStatus({ type: 'success', message: 'Mesai kayd silindi.' });
+                      setStatus({ type: 'success', message: 'Mesai kayd silindii.' });
                     }}
                     className="flex-1 rounded-xl bg-red-500/10 py-3 font-bold text-red-500 transition-colors hover:bg-red-500/20"
                   >
@@ -3984,19 +3984,19 @@ export default function App() {
             >
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="text-xl font-bold flex items-center gap-2">
-                  <Key size={24} className="text-orange-500" /> ŞŞifreyi Deitir
+                  <Key size={24} className="text-orange-500" /> Şifreyi Değiştir
                 </h3>
                 <button onClick={() => setShowPasswordChangeModal(false)} className="rounded-full bg-zinc-900 p-2 text-zinc-500 hover:bg-zinc-800"><X size={20} /></button>
               </div>
               <form onSubmit={handleSelfPasswordChange} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 uppercase">Yeni ŞŞifre</label>
+                  <label className="text-xs font-semibold text-zinc-500 uppercase">Yeni Şifre</label>
                   <input 
                     type="password" 
                     required 
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="ŞŞifrenizi girin" 
+                    placeholder="Şifrenizi girişn" 
                     className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none" 
                   />
                 </div>
@@ -4124,11 +4124,11 @@ export default function App() {
                 {/* Logs Section */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-zinc-500 uppercase flex items-center gap-2">
-                    <LogIn size={14} className="text-emerald-500" /> Giris-k Kaytlar
+                    <LogIn size={14} className="text-emerald-500" /> Giris-k Kayıtlıar
                   </h4>
                   <div className="space-y-2">
                     {logs.filter(l => l.userId === selectedDayDetails.userId && !l.deleted && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM-dd') === selectedDayDetails.date).length === 0 ? (
-                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu gn iin giri/k kayd yok.</p>
+                      <p className="text-xs italic text-zinc-600 py-2 text-center">Bu gn iin giriş/k kayd yok.</p>
                     ) : (
                       logs.filter(l => l.userId === selectedDayDetails.userId && !l.deleted && l.timestamp?.toDate && format(l.timestamp.toDate(), 'yyyy-MM-dd') === selectedDayDetails.date)
                         .sort((a,b) => a.timestamp.toDate() - b.timestamp.toDate())
@@ -4185,7 +4185,7 @@ export default function App() {
                 {/* Overtime Section */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-zinc-500 uppercase flex items-center gap-2">
-                    <Clock size={14} className="text-blue-500" /> Mesai Kaytlar
+                    <Clock size={14} className="text-blue-500" /> Mesai Kayıtlıar
                   </h4>
                   <div className="space-y-2">
                     {overtimeRequests.filter(r => r.userId === selectedDayDetails.userId && r.date === selectedDayDetails.date).length === 0 ? (
@@ -4242,7 +4242,7 @@ export default function App() {
                             onClick={async () => {
                               await overtimeMutation.mutateAsync({ method: 'DELETE', id: deletingOvertime.id! });
                               setDeletingOvertime(null);
-                              setStatus({ type: 'success', message: 'Mesai kayd silindi.' });
+                              setStatus({ type: 'success', message: 'Mesai kayd silindii.' });
                             }} 
                             className="flex-1 rounded-xl bg-red-500 py-3 font-bold text-white"
                           >
@@ -4257,7 +4257,7 @@ export default function App() {
                 {/* Leave Section */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-zinc-500 uppercase flex items-center gap-2">
-                    <FileText size={14} className="text-orange-500" /> Izin Kaytlar
+                    <FileText size={14} className="text-orange-500" /> Izin Kayıtlıar
                   </h4>
                   <div className="space-y-2">
                     {leaveRequests.filter(r => r.userId === selectedDayDetails.userId && selectedDayDetails.date >= r.startDate && selectedDayDetails.date <= r.endDate).length === 0 ? (
@@ -4271,7 +4271,7 @@ export default function App() {
                                 <FileText size={14} />
                               </div>
                               <div>
-                                <p className="text-sm font-bold capitalize">{req.type === 'report' ? 'Rapor' : (req.type === 'excuse' ? 'Mazeret' : 'Yllk Izin')}</p>
+                                <p className="text-sm font-bold capitalize">{req.type === 'report' ? 'Rapor' : (req.type === 'excuse' ? 'Mazeret' : 'Yıllk Izin')}</p>
                                 <p className={cn("text-[9px] font-bold uppercase", 
                                   req.status === 'approved' ? "text-emerald-500" : 
                                   req.status === 'pending' ? "text-orange-500" : "text-red-500"
@@ -4417,7 +4417,7 @@ export default function App() {
                   try {
                     await overtimeMutation.mutateAsync({ method: 'DELETE', id: deletingOvertime.id! });
                     setDeletingOvertime(null);
-                    setStatus({ type: 'success', message: 'Mesai kayd silindi' });
+                    setStatus({ type: 'success', message: 'Mesai kayd silindii' });
                   } catch (e) {
                     setStatus({ type: 'error', message: 'Hata olutu' });
                   }
@@ -4452,7 +4452,7 @@ export default function App() {
               </div>
               <h3 className="mb-2 text-xl font-bold text-white">Personeli Sil</h3>
               <p className="mb-6 text-sm text-zinc-400">
-                <strong>{deletingUser.name}</strong> isimli personeli silmek istediinize emin misiniz? Bu ilem personelin sisteme giriini engelleyecektir.
+                <strong>{deletingUser.name}</strong> isimli personeli silmek istediinize emin misiniz? Bu ilem personelin sisteme girişini engelleyecektir.
               </p>
               <div className="flex gap-3">
                 <button
@@ -4498,7 +4498,7 @@ export default function App() {
                   onScanSuccess={handleScanSuccess} 
                   onScanError={(err) => {
                     // Only show fatal errors like permission denied
-                    if (err.includes("izni reddedildi") || err.includes("balatlamad")) {
+                    if (err.includes("izni reddedildii") || err.includes("balatlamad")) {
                       setStatus({ type: 'error', message: err });
                       setShowScanner(false);
                     }
@@ -4578,7 +4578,7 @@ export default function App() {
                     </div>
                     <div>
                       <p className="font-bold text-white text-sm">Manuel Giris</p>
-                      <p className="text-xs text-zinc-500 mt-0.5">Saati kendiniz girin (nakliye, saha Calismas)</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">Saati kendiniz girişn (nakliye, saha Calismas)</p>
                     </div>
                     <ChevronRight size={18} className="ml-auto text-zinc-600" />
                   </button>
@@ -4610,7 +4610,7 @@ export default function App() {
                     <textarea
                       value={remoteNote}
                       onChange={(e) => setRemoteNote(e.target.value)}
-                      placeholder="rn: Ankara mal teslimi, antiye Calismas..."
+                      placeholder="Örn: Ankara mal teslimi, antiye Calismas..."
                       rows={3}
                       className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm focus:border-orange-500 focus:outline-none resize-none"
                     />
@@ -4643,7 +4643,7 @@ export default function App() {
                             location = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
                           } catch {}
 
-                          const logPayload = {
+                          const logPayıload = {
                             userId: user.uid,
                             userName: profile.name,
                             type: pendingScanType,
@@ -4655,15 +4655,15 @@ export default function App() {
                             manualEntry: true,
                           };
 
-                          const newDocRef = await attendanceMutation.mutateAsync({ method: 'POST', payload: {
-                            ...logPayload,
+                          const newDocRef = await attendanceMutation.mutateAsync({ method: 'POST', payıload: {
+                            ...logPayıload,
                             timestamp: clientNow, // Kullancnn girdii saat
                           } });
 
                           // Optimistik UI
                           const optimisticLog: AttendanceLog = {
                             id: newDocRef.id,
-                            ...logPayload,
+                            ...logPayıload,
                             timestamp: { toDate: () => clientNow } as any,
                           };
                           setLogs(prev => [optimisticLog, ...prev.filter(l => l.id !== newDocRef.id)]);
@@ -4675,7 +4675,7 @@ export default function App() {
                             body: JSON.stringify({ userId: user.uid, userName: profile.name, type: pendingScanType, isRemote: true, remoteNote: remoteNote || '' })
                           }).catch(() => {});
 
-                          setStatus({ type: 'success', message: `?? Manuel ${pendingScanType === 'in' ? 'giri' : 'k'} talebi alnd. Yönetici onayndan sonra kesinleecek.` });
+                          setStatus({ type: 'success', message: `?? Manuel ${pendingScanType === 'in' ? 'giriş' : 'k'} talebi alnd. Yönetici onayndan sonra kesinleecek.` });
                           setShowRemoteModal(false);
                           setRemoteManualMode(false);
                           setRemoteNote('');
@@ -4722,7 +4722,7 @@ export default function App() {
                   </div>
                   <h4 className="text-xl font-bold text-white">PDF Belgesi</h4>
                   <p className="text-sm text-zinc-400">
-                    Mobil cihazlarda (zellikle iOS) yerleik PDF grntleyiciler tam uyumlu Calismayabilir. Belgeyi eksiksiz grntlemek iin ltfen cihaznza indirin veya an.
+                    Mobil cihazlarda (zellikle iOS) yerleik PDF grntleyiciler tam uyumlu Calismayabilir. Belgeyi eksiksiz grntlemek iin lütfen cihaznza indirin veya an.
                   </p>
                   <button 
                     onClick={handleDownloadAndOpen}
