@@ -163,7 +163,7 @@ const initDb = async () => {
       const bcryptLib = require('bcryptjs');
       const hash = await bcryptLib.hash('admin', 10);
       await client.query(
-        "INSERT INTO users (company_id, personnel_id, password_hash, name, role, leave_balance, can_remote_check_in, is_active) VALUES ($1, 'admin', $2, 'Sistem Yoneticisi', 'superadmin', 14, true, true)",
+        "INSERT INTO users (company_id, personnel_id, password_hash, name, role, leave_balance, can_remote_check_in, is_active) VALUES ($1, 'admin', $2, 'Sistem Yoneticisi', 'admin', 14, true, true)",
         [companyId, hash]
       );
       
