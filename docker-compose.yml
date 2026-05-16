@@ -13,7 +13,7 @@ services:
       - PDKS_SYSTEM_KEY=${PDKS_SYSTEM_KEY}
       - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
       # Veritabani Baglantisi (db servisine baglanacak)
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-pdks_admin}:${POSTGRES_PASSWORD:-pdks_secure_password_123}@pdks-db:5432/${POSTGRES_DB:-pdks_saas}
+      - DATABASE_URL=postgresql://pdks_admin:pdks_secure_password_123@pdks-db:5432/pdks_saas
     depends_on:
       - pdks-db
     restart: unless-stopped
@@ -33,3 +33,4 @@ services:
 
 volumes:
   pdks_pgdata:
+
