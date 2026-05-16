@@ -37,11 +37,11 @@ async function sendPushToUser(userId: string, title: string, body: string, link:
 // Authentication Middleware
 const authenticateToken = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
-  const tÇoken = authHeader && authHeader.split(' ')[1];
-  if (!tÇoken) return res.status(401).json({ error: 'Unauthorized' });
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-  jwt.verify(tÇoken, JWT_SECRET, (err: any, user: any) => {
-    if (err) return res.status(403).json({ error: 'TÇoken expired or invalid' });
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    if (err) return res.status(403).json({ error: 'Token expired or invalid' });
     req.user = user; // { uid, role, companyId }
     next();
   });
@@ -53,104 +53,148 @@ async function startServer() {
 const initDb = async () => {
   try {
     const client = await pool.connect();
+    
+    // Create enum types if they don't exist
+    await client.query(`
+      DO $ BEGIN
+        CREATE TYPE role AS ENUM ('superadmin', 'admin', 'mudur', 'takim_lideri', 'personel');
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $;
+      
+      DO $ BEGIN
+        CREATE TYPE log_type AS ENUM ('in', 'out');
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $;
+      
+      DO $ BEGIN
+        CREATE TYPE status AS ENUM ('pending', 'approved', 'rejected');
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $;
+    `);
+
+    // Create tables matching Drizzle schema exactly
     await client.query(`
       CREATE TABLE IF NOT EXISTS companies (
-        id SERIAL PRIMARY KEY,
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name TEXT NOT NULL,
-        subscription_status TEXT DEFAULT 'active'
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT now() NOT NULL
       );
+      
+      CREATE TABLE IF NOT EXISTS company_settings (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        company_id UUID REFERENCES companies(id) NOT NULL,
+        office_ip TEXT,
+        qr_secret TEXT,
+        shift_start TEXT DEFAULT '08:00',
+        shift_end TEXT DEFAULT '18:00',
+        work_days_per_week INTEGER DEFAULT 5,
+        break_rules JSONB,
+        updated_at TIMESTAMP DEFAULT now() NOT NULL
+      );
+      
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        company_id INTEGER REFERENCES companies(id),
-        personnel_id TEXT UNIQUE NOT NULL,
+        company_id UUID REFERENCES companies(id),
+        personnel_id TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
         name TEXT NOT NULL,
         title TEXT,
-        role TEXT NOT NULL DEFAULT 'user',
+        role role DEFAULT 'personel' NOT NULL,
         manager_id UUID,
-        avatar_url TEXT,
-        password_hash TEXT NOT NULL,
         leave_balance REAL DEFAULT 14,
-        can_remote_check_in BOOLEAN DEFAULT false,
+        start_date TIMESTAMP,
         allowed_device TEXT,
+        device_id TEXT,
+        can_remote_check_in BOOLEAN DEFAULT false,
+        avatar_url TEXT,
         push_subscription TEXT,
         is_active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT now()
+        created_at TIMESTAMP DEFAULT now() NOT NULL
       );
+      
       CREATE TABLE IF NOT EXISTS attendance_logs (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        company_id INTEGER REFERENCES companies(id),
-        user_id UUID REFERENCES users(id),
-        user_name TEXT NOT NULL,
-        timestamp TIMESTAMP NOT NULL DEFAULT now(),
-        type TEXT NOT NULL,
-        status TEXT DEFAULT 'pending',
+        company_id UUID REFERENCES companies(id) NOT NULL,
+        user_id UUID REFERENCES users(id) NOT NULL,
+        timestamp TIMESTAMP DEFAULT now() NOT NULL,
+        type log_type NOT NULL,
         ip_address TEXT,
-        device_info TEXT,
-        location TEXT,
+        status TEXT,
+        error_message TEXT,
+        latitude REAL,
+        longitude REAL,
         is_remote BOOLEAN DEFAULT false,
         remote_note TEXT,
         manual_entry BOOLEAN DEFAULT false,
-        error_message TEXT,
-        created_at TIMESTAMP DEFAULT now()
-      );
-      CREATE TABLE IF NOT EXISTS leave_requests (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        company_id INTEGER REFERENCES companies(id),
-        user_id UUID REFERENCES users(id),
-        user_name TEXT NOT NULL,
-        manager_id UUID,
-        start_date TEXT NOT NULL,
-        end_date TEXT NOT NULL,
-        days REAL NOT NULL,
-        type TEXT NOT NULL,
-        reason TEXT,
-        attachment_url TEXT,
-        status TEXT DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT now()
-      );
-      CREATE TABLE IF NOT EXISTS overtime_requests (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        company_id INTEGER REFERENCES companies(id),
-        user_id UUID REFERENCES users(id),
-        user_name TEXT NOT NULL,
-        manager_id UUID,
-        date TEXT NOT NULL,
-        hours REAL NOT NULL,
-        description TEXT,
-        status TEXT DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT now()
-      );
-      CREATE TABLE IF NOT EXISTS company_settings (
-        company_id INTEGER PRIMARY KEY REFERENCES companies(id),
-        qr_secret TEXT,
-        tolerance_minutes INTEGER DEFAULT 15,
-        shift_start TEXT DEFAULT '09:00',
-        shift_end TEXT DEFAULT '18:00',
-        require_location BOOLEAN DEFAULT false,
-        allowed_ips TEXT
-      );
-      CREATE TABLE IF NOT EXISTS notifications (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID REFERENCES users(id),
-        title TEXT NOT NULL,
-        message TEXT NOT NULL,
-        type TEXT DEFAULT 'info',
-        read BOOLEAN DEFAULT false,
-        created_at TIMESTAMP DEFAULT now()
+        deleted BOOLEAN DEFAULT false
       );
       
-      -- Default Admin User Check
-      DO \$\$
-      DECLARE
-        comp_id INTEGER;
-      BEGIN
-        IF NOT EXISTS (SELECT 1 FROM companies WHERE name = 'PDKS Demo') THEN
-          INSERT INTO companies (name, subscription_status) VALUES ('PDKS Demo', 'active') RETURNING id INTO comp_id;
-          INSERT INTO users (company_id, personnel_id, name, role, password_hash, leave_balance, can_remote_check_in)
-          VALUES (comp_id, 'admin', 'Sistem Yöneticisi', 'superadmin', '\$2a\$10\$D1PjV.M/vG3R2GjQj.7qG./37L.Y.p9nO5rI8c7L3oH9qL8aU3.Y6', 14, true);
-        END IF;
-      END \$\$;
+      CREATE TABLE IF NOT EXISTS leave_requests (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        company_id UUID REFERENCES companies(id) NOT NULL,
+        user_id UUID REFERENCES users(id) NOT NULL,
+        start_date TIMESTAMP NOT NULL,
+        end_date TIMESTAMP NOT NULL,
+        days REAL NOT NULL,
+        reason TEXT,
+        type TEXT NOT NULL,
+        status status DEFAULT 'pending' NOT NULL,
+        attachment_url TEXT,
+        deleted BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT now() NOT NULL
+      );
+      
+      CREATE TABLE IF NOT EXISTS overtime_requests (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        company_id UUID REFERENCES companies(id) NOT NULL,
+        user_id UUID REFERENCES users(id) NOT NULL,
+        date TIMESTAMP NOT NULL,
+        hours REAL NOT NULL,
+        description TEXT,
+        status status DEFAULT 'pending' NOT NULL,
+        deleted BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT now() NOT NULL
+      );
+      
+      CREATE TABLE IF NOT EXISTS notifications (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        type TEXT NOT NULL,
+        read BOOLEAN DEFAULT false NOT NULL,
+        link TEXT,
+        created_at TIMESTAMP DEFAULT now() NOT NULL
+      );
     `);
+
+    // Seed default admin if no users exist
+    const existing = await client.query('SELECT COUNT(*) FROM users');
+    if (parseInt(existing.rows[0].count) === 0) {
+      // Create default company
+      const compResult = await client.query(
+        "INSERT INTO companies (name, is_active) VALUES ('PDKS Demo', true) RETURNING id"
+      );
+      const companyId = compResult.rows[0].id;
+      
+      // Create admin user with password 'admin'
+      const bcrypt = require('bcryptjs');
+      const hash = await bcrypt.hash('admin', 10);
+      await client.query(
+        "INSERT INTO users (company_id, personnel_id, password_hash, name, role, leave_balance, can_remote_check_in, is_active) VALUES ($1, 'admin', $2, 'Sistem Yoneticisi', 'superadmin', 14, true, true)",
+        [companyId, hash]
+      );
+      
+      // Create default settings
+      await client.query(
+        "INSERT INTO company_settings (company_id, shift_start, shift_end) VALUES ($1, '08:00', '18:00')",
+        [companyId]
+      );
+      
+      console.log('Default admin user created (admin/admin)');
+    }
+    
     client.release();
     console.log('Database initialized successfully.');
   } catch (err) {
@@ -185,25 +229,25 @@ const app = express();
   // API Routes - Public
   app.post('/api/login', async (req, res) => {
     const { personnelId, password, deviceInfo, permanentDeviceId } = req.body;
-    if (!personnelId || !password) return res.status(400).json({ error: 'Ge�ersiz giri�' });
+    if (!personnelId || !password) return res.status(400).json({ error: 'Gecersiz giris' });
     const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
-    if (!checkRateLimit(clientIp)) return res.status(429).json({ error: '�Çok fazla deneme.' });
+    if (!checkRateLimit(clientIp)) return res.status(429).json({ error: 'Cok fazla deneme.' });
 
     try {
       const userList = await db.select().from(users).where(eq(users.personnelId, personnelId)).limit(1);
-      if (userList.length === 0) return res.status(401).json({ error: 'Hatalı� ID veya �ifre' });
+      if (userList.length === 0) return res.status(401).json({ error: 'Hatali ID veya sifre' });
       const user = userList[0];
 
       const passwordMatch = await bcrypt.compare(password, user.passwordHash);
-      if (!passwordMatch) return res.status(401).json({ error: 'Hatalı� ID veya �ifre' });
-      if (!user.isActive) return res.status(403).json({ error: 'Hesap devre dışı���' });
+      if (!passwordMatch) return res.status(401).json({ error: 'Hatali ID veya sifre' });
+      if (!user.isActive) return res.status(403).json({ error: 'Hesap devre disi' });
 
-      // TÇoken
-      const tÇoken = jwt.sign({ uid: user.id, role: user.role, companyId: user.companyId }, JWT_SECRET, { expiresIn: '30d' });
+      // Token
+      const token = jwt.sign({ uid: user.id, role: user.role, companyId: user.companyId }, JWT_SECRET, { expiresIn: '30d' });
       const { passwordHash, ...safeUser } = user;
-      res.json({ success: true, uid: user.id, customTÇoken: tÇoken, ...safeUser });
+      res.json({ success: true, uid: user.id, customToken: token, ...safeUser });
     } catch (error: any) {
-      res.status(500).json({ error: 'Sistem hatası�' });
+      res.status(500).json({ error: 'Sistem hatasi' });
     }
   });
 
@@ -215,7 +259,7 @@ const app = express();
       const { passwordHash, ...safeUser } = userList[0];
       res.json(safeUser);
     } catch (error: any) {
-      res.status(500).json({ error: 'Sistem hatası�' });
+      res.status(500).json({ error: 'Sistem hatasi' });
     }
   });
 
@@ -230,7 +274,7 @@ const app = express();
 
   app.get('/api/users', authenticateToken, async (req: any, res) => {
     try {
-      if (!req.user.companyId && req.user.role !== 'superadmin') return res.status(400).json({ error: '�irket bulunamad�' });
+      if (!req.user.companyId && req.user.role !== 'superadmin') return res.status(400).json({ error: 'Sirket bulunamadi' });
       
       const query = req.user.role === 'superadmin' 
         ? db.select().from(users) 
@@ -240,18 +284,18 @@ const app = express();
       const safeUsers = allUsers.map(u => { const { passwordHash, ...safe } = u; return safe; });
       res.json(safeUsers);
     } catch (error) {
-      res.status(500).json({ error: 'Sistem hatası�' });
+      res.status(500).json({ error: 'Sistem hatasi' });
     }
   });
 
   app.get('/api/logs', authenticateToken, async (req: any, res) => {
     try {
       const companyId = req.user.companyId;
-      if (!companyId) return res.status(400).json({ error: '�irket bulunamad�' });
+      if (!companyId) return res.status(400).json({ error: 'Sirket bulunamadi' });
       const logs = await db.select().from(attendanceLogs).where(eq(attendanceLogs.companyId, companyId)).orderBy(desc(attendanceLogs.timestamp));
       res.json(logs);
     } catch (error) {
-      res.status(500).json({ error: 'Sistem hatası�' });
+      res.status(500).json({ error: 'Sistem hatasi' });
     }
   });
 
@@ -274,7 +318,7 @@ const app = express();
       });
       res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ error: 'Sistem hatası�' });
+      res.status(500).json({ error: 'Sistem hatasi' });
     }
   });
 
