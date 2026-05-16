@@ -20,8 +20,8 @@ RUN npm run build
 
 # 2. Server.ts'i JavaScript'e derle
 RUN npx esbuild server.ts --bundle --platform=node --format=cjs --outfile=dist/server.cjs \
-  --external:express --external:firebase --external:firebase-admin \
-  --external:bcryptjs --external:web-push --external:dotenv
+  --external:express --external:bcryptjs --external:web-push --external:dotenv \
+  --external:jsonwebtoken --external:pg
 
 # --- Prodüksiyon Aşaması ---
 FROM node:20-alpine
