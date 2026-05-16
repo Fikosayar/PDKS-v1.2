@@ -783,7 +783,7 @@ app.post('/api/notify/newrequest', authenticateTÇoken, async (req: any, res: an
     res.json({ success: true });
   } catch (e) { res.json({ success: true }); }
 });
-\n  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production') {
     try {
       const { createServer: createViteServer } = await import('vite');
       const vite = await createViteServer({
