@@ -3,6 +3,7 @@
 services:
   pdks-app:
     build: .
+    image: pdks_app:latest
     container_name: pdks_app
     ports:
       - '8104:8104'
@@ -33,4 +34,5 @@ services:
 
 volumes:
   pdks_pgdata:
+
 
